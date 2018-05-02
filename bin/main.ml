@@ -36,6 +36,21 @@ let typeToOffsets t =
             | Some i -> repeat (i64_to_int i) base_type_size
           end
      end
+  | TComp (cinfo, _) ->
+     begin
+       if cinfo.cstruct then
+         (* Structs *)
+         begin
+           let alignment_bits = 8 * (alignOf_int t) in
+           List.fold_left (fun typeList field ->
+             (* Compute the size of the field and any needed padding *)
+               []
+             ) [] cinfo.cfields
+         end
+       else
+         (* Unions *)
+         [bitsSizeOf t]
+     end
   | _ -> []
 
 let doGlobal glob =
