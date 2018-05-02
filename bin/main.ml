@@ -22,12 +22,21 @@ let printFunLocals f =
   List.iter (fun v -> E.log "Formal: %a\n" d_varinfo v) f.sformals;
   List.iter (fun v -> E.log "Local: %a\n" d_varinfo v) f.slocals
 
-let strList l =
-  match l with
-  | [] -> ""
-  | fst::[] -> fst
-  | fst::rest ->
-     List.fold_left (fun cur next -> Printf.sprintf "%s, %s" cur next) fst rest
+let typeToOffsets t =
+  match t with
+  | TArray (base_type, exp, attrs) ->
+     let base_type_size = bitsSizeOf base_type in
+     begin
+       match exp with
+       | None -> []
+       | Some e ->
+          begin
+            match isInteger e with
+            | None -> E.log "Expression is not an integer\n"; []
+            | Some i -> repeat (i64_to_int i) base_type_size
+          end
+     end
+  | _ -> []
 
 let doGlobal glob =
   match glob with
@@ -42,7 +51,9 @@ let doGlobal glob =
          | TComp _ | TArray _ -> "composite type"
          | _        -> "not composite type"
        in
+       E.log "Alignment for type %s: %d bytes\n" t.tname (alignOf_int t.ttype);
        let type_size = bitsSizeOf t.ttype in
+       E.log "Type offsets: [%s]\n" (intListToStr (typeToOffsets t.ttype));
        let cur_types = TypeMap.find_opt type_size !tmap in
        begin
          match cur_types with
@@ -60,7 +71,7 @@ let printTypes type_map =
   if TypeMap.is_empty type_map then
     E.log "Empty!\n";
   TypeMap.iter (fun type_size type_names ->
-      E.log "Types with size %d bits: %s\n" type_size (strList type_names)
+      E.log "Types with size %d bits: %s\n" type_size (strListToStr type_names)
     ) type_map
 
 let main () =
