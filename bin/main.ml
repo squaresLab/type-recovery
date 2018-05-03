@@ -116,6 +116,15 @@ let collectTypes glob =
        | None -> tmap := TypeMap.add type_sig [t.tname] !tmap
        | Some ts -> tmap := TypeMap.add type_sig (t.tname::ts) !tmap
      end
+  | GCompTag (cinfo, _) ->
+     let ttype = TComp (cinfo, []) in
+     let type_sig = typeToOffsets ttype in
+     let cur_types = TypeMap.find_opt type_sig !tmap in
+     begin
+       match cur_types with
+       | None -> tmap := TypeMap.add type_sig [cinfo.cname] !tmap
+       | Some ts -> tmap := TypeMap.add type_sig (cinfo.cname::ts) !tmap
+     end
   | _ -> ()
 
 let printTypes type_map =
