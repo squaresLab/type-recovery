@@ -71,6 +71,25 @@ let doGlobal glob =
   | GCompTagDecl (c, _) -> E.log "Global decl: %s\n" c.cname
   | _ -> ()
 
+let alt_types t =
+  let t_sig = typeToOffsets t in
+  let alts = TypeMap.find_opt t_sig !tmap in
+  match alts with
+  | None -> "None"
+  | Some ts -> strListToStr ts
+
+let funInfo glob =
+  match glob with
+  | GFun (f, loc) ->
+     let return_type =
+       match f.svar.vtype with
+       | TFun (t, _, _, _) -> t
+       | _ -> voidType
+     in
+     E.log "Function: %s has return type %a\n" f.svar.vname d_type return_type;
+     E.log "Possible alternate types: %s\n" (alt_types return_type)
+  | _ -> ()
+
 let collectTypes glob =
   match glob with
   | GType (t, _) ->
@@ -97,7 +116,7 @@ let main () =
   let fname = Sys.argv.(1) in
   let parsed = parseOneFile fname in
   iterGlobals parsed collectTypes;
-  (* iterGlobals parsed doGlobal; *)
+  iterGlobals parsed funInfo;
   printTypes !tmap
 ;;
 
