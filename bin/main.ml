@@ -87,7 +87,9 @@ let printTypes type_map =
   if TypeMap.is_empty type_map then
     E.log "Empty!\n";
   TypeMap.iter (fun type_sig type_names ->
-      E.log "Types with signature [%s]: %s\n" (intListToStr type_sig) (strListToStr type_names)
+      E.log "Types with signature [%s]: %s\n"
+        (intListToStr type_sig)
+        (strListToStr type_names)
     ) type_map
 
 let main () =
