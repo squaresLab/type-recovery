@@ -4,7 +4,7 @@ open Lib.Utils
 
 module E = Errormsg
 
-module TypeMap = Map.Make(struct type t = int let compare = compare end)
+module TypeMap = Map.Make(struct type t = int list let compare = compare end)
 
 let tmap = ref TypeMap.empty
 
@@ -69,41 +69,33 @@ let doGlobal glob =
   | GVar (v, _, _)  -> E.log "Global: %a\n" d_varinfo v
   | GCompTag (c, _) -> E.log "Global: %s\n" c.cname
   | GCompTagDecl (c, _) -> E.log "Global decl: %s\n" c.cname
-  | GType (t, _)    ->
+  | _ -> ()
+
+let collectTypes glob =
+  match glob with
+  | GType (t, _) ->
+     let type_sig = typeToOffsets t.ttype in
+     let cur_types = TypeMap.find_opt type_sig !tmap in
      begin
-       let this_type_info =
-         match t.ttype with
-         | TComp _ | TArray _ -> "composite type"
-         | _        -> "not composite type"
-       in
-       E.log "Alignment for type %s: %d bytes\n" t.tname (alignOf_int t.ttype);
-       let type_size = bitsSizeOf t.ttype in
-       E.log "Type offsets: [%s]\n" (intListToStr (typeToOffsets t.ttype));
-       let cur_types = TypeMap.find_opt type_size !tmap in
-       begin
-         match cur_types with
-         | None ->
-            tmap := TypeMap.add type_size [t.tname] !tmap
-         | Some ts ->
-            tmap := TypeMap.add type_size (t.tname::ts) !tmap
-       end;
-       E.log "Global type: %s : %a : %d bits : %s\n" t.tname d_type t.ttype (bitsSizeOf t.ttype) this_type_info
+       match cur_types with
+       | None -> tmap := TypeMap.add type_sig [t.tname] !tmap
+       | Some ts -> tmap := TypeMap.add type_sig (t.tname::ts) !tmap
      end
-  (* | GVarDecl (v, _) -> E.log "Global: %a\n" d_varinfo v *)
   | _ -> ()
 
 let printTypes type_map =
   if TypeMap.is_empty type_map then
     E.log "Empty!\n";
-  TypeMap.iter (fun type_size type_names ->
-      E.log "Types with size %d bits: %s\n" type_size (strListToStr type_names)
+  TypeMap.iter (fun type_sig type_names ->
+      E.log "Types with signature [%s]: %s\n" (intListToStr type_sig) (strListToStr type_names)
     ) type_map
 
 let main () =
   initCIL ();
   let fname = Sys.argv.(1) in
   let parsed = parseOneFile fname in
-  iterGlobals parsed doGlobal;
+  iterGlobals parsed collectTypes;
+  (* iterGlobals parsed doGlobal; *)
   printTypes !tmap
 ;;
 
