@@ -87,7 +87,23 @@ let funInfo glob =
        | _ -> voidType
      in
      E.log "Function: %s has return type %a\n" f.svar.vname d_type return_type;
-     E.log "Possible alternate types: %s\n" (alt_types return_type)
+     E.log "Alternate types: %s\n" (alt_types return_type);
+     let formals_sig = List.fold_left (fun sigs formal ->
+                           let formal_sig = typeToOffsets formal.vtype in
+                           sigs@formal_sig
+                         ) [] f.sformals
+     in
+     E.log "Formal types: [%s]\n" (listToString
+                                     (fun f ->
+                                       sprint 10 (dprintf "%a" d_type f.vtype)
+                                     ) f.sformals);
+     E.log "Formal sig: [%s]\n" (intListToStr formals_sig);
+     let formal_alts =
+       match TypeMap.find_opt formals_sig !tmap with
+       | None -> "None"
+       | Some ts -> strListToStr ts
+     in
+     E.log "Alternate formal types: %s\n" formal_alts
   | _ -> ()
 
 let collectTypes glob =
@@ -120,10 +136,5 @@ let main () =
   printTypes !tmap
 ;;
 
-begin
-  try
-    main ()
-  with
-  | _ -> ()
-end;
+main ();
 exit 0
