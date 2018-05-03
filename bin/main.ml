@@ -39,7 +39,7 @@ let typeToOffsets t =
   | TComp (cinfo, _) when cinfo.cstruct ->
      let alignBits = 8 * (alignOf_int t) in
      let (info, _) =
-       List.fold_left (fun (typeList, curAlign) field ->
+       List.fold_left (fun (offsets, curAlign) field ->
            let tsize = bitsSizeOf field.ftype in
            let nextAlign =
              match tsize mod alignBits with
@@ -47,20 +47,20 @@ let typeToOffsets t =
              | t -> alignBits - t
            in
            match curAlign with
-           | 0 -> (typeList@[tsize], nextAlign)
+           | 0 -> (tsize::offsets, nextAlign)
            | c ->
               begin
                 match field.ftype with
                 | TInt (IChar, _) ->
                    (* If Char don't add padding *)
-                   (typeList@[8], c - 8)
+                   (8::offsets, c - 8)
                 | t ->
                    (* Else pad if needed *)
-                   (typeList@[c; tsize], nextAlign)
+                   (tsize::c::offsets, nextAlign)
               end
          ) ([], 0) cinfo.cfields
      in
-     info
+     List.rev info
   | _ -> [bitsSizeOf t]
 
 let doGlobal glob =
