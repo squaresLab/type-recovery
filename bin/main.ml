@@ -8,20 +8,6 @@ module TypeMap = Map.Make(struct type t = int list let compare = compare end)
 
 let tmap = ref TypeMap.empty
 
-let d_varinfo () v =
-  let real_type = typeSig v.vtype in
-  dprintf "%s has type signature %a" v.vname d_typsig real_type
-  (* let real_type = match v.vtype with
-   *   | TNamed (tinfo, _) -> tinfo.ttype
-   *   | _ -> v.vtype
-   * in
-   * dprintf "%s : %a %d bits" v.vname d_type real_type (bitsSizeOf real_type) *)
-
-let printFunLocals f =
-  E.log "Function %a\n" d_varinfo f.svar;
-  List.iter (fun v -> E.log "Formal: %a\n" d_varinfo v) f.sformals;
-  List.iter (fun v -> E.log "Local: %a\n" d_varinfo v) f.slocals
-
 let typeToOffsets t =
   match t with
   | TArray (base_type, exp, attrs) ->
@@ -62,14 +48,6 @@ let typeToOffsets t =
      in
      List.rev info
   | _ -> [bitsSizeOf t]
-
-let doGlobal glob =
-  match glob with
-  | GFun (f, loc)   -> printFunLocals f
-  | GVar (v, _, _)  -> E.log "Global: %a\n" d_varinfo v
-  | GCompTag (c, _) -> E.log "Global: %s\n" c.cname
-  | GCompTagDecl (c, _) -> E.log "Global decl: %s\n" c.cname
-  | _ -> ()
 
 let alt_types t =
   let t_sig = typeToOffsets t in
