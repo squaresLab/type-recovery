@@ -107,25 +107,26 @@ let funInfo glob =
   | _ -> ()
 
 let collectTypes glob =
+  let addToMap type_sig name map =
+    let cur_types = TypeMap.find_opt type_sig !map in
+    match cur_types with
+    | None -> map := TypeMap.add type_sig [name] !map
+    | Some ts -> map := TypeMap.add type_sig (name::ts) !map
+  in
   match glob with
   | GType (t, _) ->
      let type_sig = typeToOffsets t.ttype in
-     let cur_types = TypeMap.find_opt type_sig !tmap in
-     begin
-       match cur_types with
-       | None -> tmap := TypeMap.add type_sig [t.tname] !tmap
-       | Some ts -> tmap := TypeMap.add type_sig (t.tname::ts) !tmap
-     end
+     addToMap type_sig t.tname tmap
   | GCompTag (cinfo, _) ->
      let ttype = TComp (cinfo, []) in
      let type_sig = typeToOffsets ttype in
-     let cur_types = TypeMap.find_opt type_sig !tmap in
-     begin
-       match cur_types with
-       | None -> tmap := TypeMap.add type_sig [cinfo.cname] !tmap
-       | Some ts -> tmap := TypeMap.add type_sig (cinfo.cname::ts) !tmap
-     end
-  | _ -> ()
+     addToMap type_sig cinfo.cname tmap
+  (* Enums probably need to be treated differently *)
+  | GEnumTag (einfo, _) ->
+     let ttype = TEnum (einfo, []) in
+     let type_sig = typeToOffsets ttype in
+     addToMap type_sig einfo.ename tmap
+   | _ -> ()
 
 let printTypes type_map =
   if TypeMap.is_empty type_map then
