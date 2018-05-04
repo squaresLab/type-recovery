@@ -37,7 +37,12 @@ let rec string_of_type t =
        | FDouble     -> "double"
        | FLongDouble -> "long double"
      end
-  | TPtr (t, _) -> "* " ^ (string_of_type t)
+  | TPtr (t, _) ->
+     begin
+       match t with
+       | TPtr _ -> "*"  ^ (string_of_type t)
+       | _      -> "* " ^ (string_of_type t)
+     end
   | TArray (t, exp, _) -> (string_of_type t) ^ "[]"
   | _ -> ""
 
@@ -58,3 +63,12 @@ let intTypes = [charType;
 let floatTypes = [floatType; doubleType; longdoubleType;]
 
 let baseTypes = [voidType] @ intTypes @ floatTypes
+
+let basePointerTypes =
+  List.fold_left (fun ptrs t -> (TPtr (t, []))::ptrs) [] baseTypes
+
+let basePointerPointerTypes =
+  List.fold_left (fun ptrs t -> (TPtr (t, []))::ptrs) [] basePointerTypes
+
+let basePointerPointerPointerTypes =
+  List.fold_left (fun ptrs t -> (TPtr (t, []))::ptrs) [] basePointerPointerTypes

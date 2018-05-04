@@ -70,24 +70,32 @@ let funInfo glob =
                            sigs@formal_sig
                          ) [] f.sformals
      in
+     let locals_sig = List.fold_left (fun sigs local ->
+                          let local_sig = typeToOffsets local.vtype in
+                          sigs@local_sig
+                        ) [] f.slocals
+     in
+     let formal_alts = getAltTypes formals_sig tmap in
+     let local_alts = getAltTypes locals_sig tmap in
      E.log "Formal types: [%s]\n" (listToString
                                      (fun f ->
                                        sprint 10 (dprintf "%a" d_type f.vtype)
                                      ) f.sformals);
      E.log "Formal sig: [%s]\n" (intListToStr formals_sig);
-     let formal_alts =
-       match TypeMap.find_opt formals_sig !tmap with
-       | None -> "None"
-       | Some ts -> strListToStr ts
-     in
-     E.log "Alternate formal types: %s\n" formal_alts
+     E.log "Alternate formal types: %s\n" formal_alts;
+     E.log "Local types: [%s]\n" (listToString
+                                    (fun f ->
+                                      sprint 10 (dprintf "%a" d_type f.vtype)
+                                    ) f.slocals);
+     E.log "Local sig: [%s]\n" (intListToStr locals_sig);
+     E.log "Alternate local types: %s\n" local_alts
   | _ -> ()
 
 let addBaseTypes () =
   List.iter (fun t ->
       let type_sig = typeToOffsets t in
       addToMap type_sig (string_of_type t) tmap
-    ) baseTypes
+    ) (baseTypes @ basePointerTypes)
 
 let collectTypes glob =
   match glob with
