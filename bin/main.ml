@@ -1,10 +1,9 @@
 open Cil
 open Pretty
 open Lib.Utils
+open Lib.Types
 
 module E = Errormsg
-
-module TypeMap = Map.Make(struct type t = int list let compare = compare end)
 
 let tmap = ref TypeMap.empty
 
@@ -49,7 +48,7 @@ let typeToOffsets t =
      List.rev info
   | _ -> [bitsSizeOf t]
 
-let alt_types t =
+let altTypes t =
   let t_sig = typeToOffsets t in
   let alts = TypeMap.find_opt t_sig !tmap in
   match alts with
@@ -65,7 +64,7 @@ let funInfo glob =
        | _ -> voidType
      in
      E.log "Function: %s has return type %a\n" f.svar.vname d_type return_type;
-     E.log "Alternate types: %s\n" (alt_types return_type);
+     E.log "Alternate types: %s\n" (altTypes return_type);
      let formals_sig = List.fold_left (fun sigs formal ->
                            let formal_sig = typeToOffsets formal.vtype in
                            sigs@formal_sig
@@ -84,13 +83,13 @@ let funInfo glob =
      E.log "Alternate formal types: %s\n" formal_alts
   | _ -> ()
 
+let addBaseTypes () =
+  List.iter (fun t ->
+      let type_sig = typeToOffsets t in
+      addToMap type_sig (string_of_type t) tmap
+    ) baseTypes
+
 let collectTypes glob =
-  let addToMap type_sig name map =
-    let cur_types = TypeMap.find_opt type_sig !map in
-    match cur_types with
-    | None -> map := TypeMap.add type_sig [name] !map
-    | Some ts -> map := TypeMap.add type_sig (name::ts) !map
-  in
   match glob with
   | GType (t, _) ->
      let type_sig = typeToOffsets t.ttype in
@@ -119,8 +118,13 @@ let main () =
   initCIL ();
   let fname = Sys.argv.(1) in
   let parsed = parseOneFile fname in
+  addBaseTypes ();
   iterGlobals parsed collectTypes;
-  iterGlobals parsed funInfo;
+  iterGlobals parsed (fun f ->
+      match f with
+      | GFun _ -> funInfo f; E.log "\n"
+      | _ -> ()
+    );
   printTypes !tmap
 ;;
 

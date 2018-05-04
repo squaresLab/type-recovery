@@ -1,8 +1,16 @@
 open Cil
 
+module TypeMap = Map.Make(struct type t = int list let compare = compare end)
+
 let parseOneFile (fname : string) : file =
   let cil = Frontc.parse fname () in
   cil
+
+let addToMap type_sig name map =
+  let cur_types = TypeMap.find_opt type_sig !map in
+  match cur_types with
+  | None -> map := TypeMap.add type_sig [name] !map
+  | Some ts -> map := TypeMap.add type_sig (name::ts) !map
 
 let listToString f l =
   match l with
