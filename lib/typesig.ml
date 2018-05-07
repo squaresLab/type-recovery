@@ -1,7 +1,15 @@
 open Cil
 open Utils
 
-type tsig = int list [@@ deriving sexp]
+type memory = | Data of int
+              | Padding of int
+type tsig = memory list [@@ deriving sexp]
+
+let sigToStr (t:tsig) =
+  listToString (fun s ->
+      match s with
+      | Data x -> string_of_int x
+      | Padding x -> Printf.sprintf "P%d" x) t
 
 let typeToOffsets t =
   match t with
@@ -14,7 +22,7 @@ let typeToOffsets t =
           begin
             match isInteger e with
             | None -> failwith "Expression is not an integer\n"
-            | Some i -> repeat (i64_to_int i) base_type_size
+            | Some i -> repeat (i64_to_int i) (Data base_type_size)
           end
      end
   | TComp (cinfo, _) when cinfo.cstruct ->
@@ -28,34 +36,34 @@ let typeToOffsets t =
              | t -> alignBits - t
            in
            match curAlign with
-           | 0 -> (tsize::offsets, nextAlign)
+           | 0 -> ((Data tsize)::offsets, nextAlign)
            | c ->
               begin
                 match field.ftype with
                 | TInt (IChar, _) ->
                    (* If Char don't add padding *)
-                   (8::offsets, c - 8)
+                   ((Data 8)::offsets, c - 8)
                 | t ->
                    (* Else pad if needed *)
-                   (tsize::c::offsets, nextAlign)
+                   ((Data tsize)::(Padding c)::offsets, nextAlign)
               end
          ) ([], 0) cinfo.cfields
      in
      List.rev info
-  | _ -> [bitsSizeOf t]
+  | _ -> [Data (bitsSizeOf t)]
 
-let addType type_sig name tbl =
+let addType (type_sig:tsig) name tbl =
   let cur_types = Hashtbl.find_opt tbl type_sig in
   match cur_types with
   | None -> Hashtbl.replace tbl type_sig [name]
   | Some ts -> Hashtbl.replace tbl type_sig (name::ts)
 
-let getTypenames type_sig tbl =
+let getTypenames (type_sig:tsig) tbl =
   match Hashtbl.find_opt tbl type_sig with
   | None -> ["None"]
   | Some ts -> ts
 
-let getAltTypes type_sig tbl =
+let getAltTypes (type_sig:tsig) tbl =
   let signature_partitions =
     List.filter
       (List.for_all (fun s -> Hashtbl.mem tbl s)) (listPartitions type_sig) in

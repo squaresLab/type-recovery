@@ -40,14 +40,14 @@ let funInfo glob =
                                      (fun f ->
                                        sprint 10 (dprintf "%a" d_type f.vtype)
                                      ) f.sformals);
-     E.log "Formal sig: [%s]\n" (intListToStr formals_sig);
+     E.log "Formal sig: [%s]\n" (sigToStr formals_sig);
      dispAltTypes formal_alts;
      E.log "Local types: [%s]\n" (listToString
                                     (fun f ->
                                       sprint 10 (dprintf "%a" d_type f.vtype)
                                     ) f.slocals);
-     E.log "Local sig: [%s]\n" (intListToStr locals_sig);
-     E.log "Alternate local types: %s\n" (List.hd (List.hd local_alts)) (* FIXME *)
+     E.log "Local sig: [%s]\n" (sigToStr locals_sig);
+     dispAltTypes local_alts
   | _ -> ()
 
 let addBaseTypes () =
@@ -75,7 +75,7 @@ let collectTypes glob =
 let printTypes sigs =
   Hashtbl.iter (fun type_sig type_names ->
       E.log "Types with signature [%s]: %s\n"
-        (intListToStr type_sig)
+        (sigToStr type_sig)
         (strListToStr type_names)
     ) sigs
 
