@@ -1,5 +1,6 @@
 (* Additional base types not defined by CIL *)
 open Cil
+open Utils
 
 let scharType      = TInt(ISChar, [])
 let ucharType      = TInt(IUChar, [])
