@@ -52,11 +52,12 @@ let typeToOffsets t =
      List.rev info
   | _ -> [Data (bitsSizeOf t)]
 
-let addType (type_sig:tsig) name tbl =
+let addType (type_sig:tsig) name (tbl:(tsig, string list)Hashtbl.t) =
   let cur_types = Hashtbl.find_opt tbl type_sig in
   match cur_types with
   | None -> Hashtbl.replace tbl type_sig [name]
-  | Some ts -> Hashtbl.replace tbl type_sig (name::ts)
+  | Some ts when not (List.mem name ts) -> Hashtbl.replace tbl type_sig (name::ts)
+  | _ -> ()
 
 let getTypenames (type_sig:tsig) tbl =
   match Hashtbl.find_opt tbl type_sig with
