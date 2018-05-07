@@ -6,8 +6,6 @@ open Lib.Typesig
 
 module E = Errormsg
 
-let signatures = Hashtbl.create 3
-
 let dispAltTypes types =
   E.log "Alternate types: %s\n" (List.fold_left (fun cur typelist ->
                                      cur ^ "[" ^ (strListToStr typelist) ^ "] "
@@ -21,7 +19,7 @@ let funInfo glob =
        | TFun (t, _, _, _) -> t
        | _ -> voidType
      in
-     let alt_types = getAltTypes (typeToOffsets return_type) signatures in
+     let alt_types = getAltTypes (typeToOffsets return_type) in
      E.log "Function: %s has return type %a\n" f.svar.vname d_type return_type;
      dispAltTypes alt_types;
      let formals_sig = List.fold_left (fun sigs formal ->
@@ -34,8 +32,8 @@ let funInfo glob =
                           sigs@local_sig
                         ) [] f.slocals
      in
-     let formal_alts = getAltTypes formals_sig signatures in
-     let local_alts = getAltTypes locals_sig signatures in
+     let formal_alts = getAltTypes formals_sig in
+     let local_alts = getAltTypes locals_sig in
      E.log "Formal types: [%s]\n" (listToString
                                      (fun f ->
                                        sprint 10 (dprintf "%a" d_type f.vtype)
@@ -53,31 +51,24 @@ let funInfo glob =
 let addBaseTypes () =
   List.iter (fun t ->
       let type_sig = typeToOffsets t in
-      addType type_sig (string_of_type t) signatures
+      addType type_sig (string_of_type t)
     ) (baseTypes @ basePointerTypes)
 
 let collectTypes glob =
   match glob with
   | GType (t, _) ->
      let type_sig = typeToOffsets t.ttype in
-     addType type_sig t.tname signatures
+     addType type_sig t.tname
   | GCompTag (cinfo, _) ->
      let ttype = TComp (cinfo, []) in
      let type_sig = typeToOffsets ttype in
-     addType type_sig cinfo.cname signatures
+     addType type_sig cinfo.cname
   (* Enums probably need to be treated differently *)
   | GEnumTag (einfo, _) ->
      let ttype = TEnum (einfo, []) in
      let type_sig = typeToOffsets ttype in
-     addType type_sig einfo.ename signatures
+     addType type_sig einfo.ename
    | _ -> ()
-
-let printTypes sigs =
-  Hashtbl.iter (fun type_sig type_names ->
-      E.log "Types with signature [%s]: %s\n"
-        (sigToStr type_sig)
-        (strListToStr type_names)
-    ) sigs
 
 let main () =
   initCIL ();
@@ -90,7 +81,7 @@ let main () =
       | GFun _ -> funInfo f; E.log "\n"
       | _ -> ()
     );
-  printTypes signatures
+  printTypes ()
 ;;
 
 main ();

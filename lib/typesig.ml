@@ -1,17 +1,22 @@
 open Cil
 open Utils
 
+module E = Errormsg
+
 type memory = | Data of int
               | Padding of int
+
 type tsig = memory list [@@ deriving sexp]
 
-let sigToStr (t:tsig) =
+let signatures : (tsig, string list) Hashtbl.t = Hashtbl.create 3
+
+let sigToStr (t : tsig) =
   listToString (fun s ->
       match s with
       | Data x -> string_of_int x
       | Padding x -> Printf.sprintf "P%d" x) t
 
-let typeToOffsets t =
+let typeToOffsets (t : typ) : tsig =
   match t with
   | TArray (base_type, exp, attrs) ->
      let base_type_size = bitsSizeOf base_type in
@@ -52,23 +57,33 @@ let typeToOffsets t =
      List.rev info
   | _ -> [Data (bitsSizeOf t)]
 
-let addType (type_sig:tsig) name (tbl:(tsig, string list)Hashtbl.t) =
-  let cur_types = Hashtbl.find_opt tbl type_sig in
+let addType type_sig name =
+  let cur_types = Hashtbl.find_opt signatures type_sig in
   match cur_types with
-  | None -> Hashtbl.replace tbl type_sig [name]
-  | Some ts when not (List.mem name ts) -> Hashtbl.replace tbl type_sig (name::ts)
+  | None -> Hashtbl.replace signatures type_sig [name]
+  | Some ts when not (List.mem name ts) ->
+     Hashtbl.replace signatures type_sig (name::ts)
   | _ -> ()
 
-let getTypenames (type_sig:tsig) tbl =
-  match Hashtbl.find_opt tbl type_sig with
+let getTypenames type_sig =
+  match Hashtbl.find_opt signatures type_sig with
   | None -> ["None"]
   | Some ts -> ts
 
-let getAltTypes (type_sig:tsig) tbl =
+let getAltTypes (type_sig : tsig) =
   let signature_partitions =
     List.filter
-      (List.for_all (fun s -> Hashtbl.mem tbl s)) (listPartitions type_sig) in
+      (List.for_all
+         (fun s -> Hashtbl.mem signatures s))
+      (listPartitions type_sig) in
   List.fold_left (fun type_lists part ->
-      let part_types = List.map (fun s -> Hashtbl.find tbl s) part in
+      let part_types = List.map (fun s -> Hashtbl.find signatures s) part in
       (product part_types)@type_lists
     ) [] signature_partitions
+
+let printTypes () =
+  Hashtbl.iter (fun type_sig type_names ->
+      E.log "Types with signature [%s]: %s\n"
+        (sigToStr type_sig)
+        (strListToStr type_names)
+    ) signatures
