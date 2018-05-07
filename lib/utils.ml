@@ -13,6 +13,16 @@ let strListToStr l =
 let intListToStr l =
   listToString string_of_int l
 
+(* product [[1;2];[3;4];[5;6]] = [[1;3;5];[1;3;6];[1;4;5];[1;4;6]...[2;4;6]] *)
+let rec product l =
+  match l with
+  | hd::tl -> List.fold_left (fun cur elem ->
+                  let p = product tl in
+                  let next = List.map (fun x -> elem::x) p in
+                  cur @ next
+                ) [] hd
+  | _ -> [[]]
+
 let repeat n elem =
   let rec helper acc n =
     match n with
@@ -20,10 +30,6 @@ let repeat n elem =
     | _ -> helper (elem::acc) (n-1)
   in
   helper [] n
-
-let parseOneFile (fname : string) : file =
-  let cil = Frontc.parse fname () in
-  cil
 
 (* Partitions a list into a list of lists of all contiguous nonempty subsequences
  * e.g.:
@@ -42,3 +48,7 @@ let rec listPartitions l =
                               | _ -> []
                             ) p in
                fst @ rest
+
+let parseOneFile (fname : string) : file =
+  let cil = Frontc.parse fname () in
+  cil
