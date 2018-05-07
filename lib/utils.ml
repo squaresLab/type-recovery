@@ -24,3 +24,21 @@ let repeat n elem =
 let parseOneFile (fname : string) : file =
   let cil = Frontc.parse fname () in
   cil
+
+(* Partitions a list into a list of lists of all contiguous nonempty subsequences
+ * e.g.:
+ * listPartitions [1;2;3] = [[[1];[2];[3]]; [[1];[2;3]]; [[1;2];[3]]; [[1;2;3]]]*)
+let rec listPartitions l =
+  match l with
+  | [] -> [[]]
+  | x::xs ->
+     let p = listPartitions xs in
+     let fst = List.map (fun elem -> [x]::elem) p in
+     match p with
+     | [[]] -> fst
+     | _    -> let rest = List.map (fun elem ->
+                              match elem with
+                              | ys::yss -> (x::ys)::yss
+                              | _ -> []
+                            ) p in
+               fst @ rest
