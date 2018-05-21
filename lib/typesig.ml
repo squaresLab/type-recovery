@@ -1,14 +1,18 @@
 open Cil
 open Utils
+open Sexplib
+open Sexplib.Std
 
 module E = Errormsg
 
 type memory = | Data of int
-              | Padding of int
+              | Padding of int [@@deriving sexp]
 
-type tsig = memory list [@@ deriving sexp]
+type tsig = memory list [@@deriving sexp]
 
-let signatures : (tsig, string list) Hashtbl.t = Hashtbl.create 3
+type sigmap = (tsig, string list) Hashtbl.t [@@deriving sexp]
+
+let signatures : sigmap = Hashtbl.create 3
 
 let sigToStr (t : tsig) =
   listToString (fun s ->
@@ -87,3 +91,10 @@ let printTypes () =
         (sigToStr type_sig)
         (strListToStr type_names)
     ) signatures
+
+let toFile fname =
+  Sexp.save fname (sexp_of_sigmap signatures)
+
+let fromFile fname =
+  let s = sigmap_of_sexp (Sexp.load_sexp fname) in
+  Hashtbl.iter (fun key v -> Hashtbl.replace signatures key v) s

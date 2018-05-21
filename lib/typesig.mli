@@ -9,3 +9,5 @@ val addType : tsig -> string -> unit
 val getTypenames : tsig -> string list
 val getAltTypes : tsig -> string list list
 val printTypes : unit -> unit
+val toFile : string -> unit
+val fromFile : string -> unit
