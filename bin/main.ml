@@ -13,8 +13,7 @@ let display_alt_types types =
     List.fold_left pretty_print "" types in
   E.log "Alternate types: %s\n" type_list
 
-let function_info glob =
-  match glob with
+let function_info = function
   | GFun (f, loc) ->
      let return_type =
        match f.svar.vtype with
