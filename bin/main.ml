@@ -54,7 +54,7 @@ let addBaseTypes () =
   List.iter (fun t ->
       let type_sig = TS.typeToOffsets t in
       TS.addType type_sig (string_of_type t)
-    ) (baseTypes @ basePointerTypes)
+    ) (base_types @ base_pointer_types)
 
 let collectTypes glob =
   match glob with

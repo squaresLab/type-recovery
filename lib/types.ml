@@ -2,6 +2,7 @@
 open Cil
 open Utils
 
+(* Naming convention to match CIL *)
 let scharType      = TInt(ISChar, [])
 let ucharType      = TInt(IUChar, [])
 let boolType       = TInt(IBool,  [])
@@ -47,29 +48,28 @@ let rec string_of_type t =
   | TArray (t, exp, _) -> (string_of_type t) ^ "[]"
   | _ -> ""
 
-let intTypes = [charType;
-                scharType;
-                ucharType;
-                boolType;
-                intType;
-                uintType;
-                shortType;
-                ushortType;
-                longType;
-                ulongType;
-                longlongType;
-                ulonglongType;
-  ]
+let int_types = [charType;
+                 scharType;
+                 ucharType;
+                 boolType;
+                 intType;
+                 uintType;
+                 shortType;
+                 ushortType;
+                 longType;
+                 ulongType;
+                 longlongType;
+                 ulonglongType;]
 
-let floatTypes = [floatType; doubleType; longdoubleType;]
+let float_types = [floatType; doubleType; longdoubleType;]
 
-let baseTypes = [voidType] @ intTypes @ floatTypes
+let base_types = [voidType] @ int_types @ float_types
 
-let basePointerTypes =
-  List.fold_left (fun ptrs t -> (TPtr (t, []))::ptrs) [] baseTypes
+let base_pointer_types =
+  List.fold_left (fun ptrs t -> (TPtr (t, []))::ptrs) [] base_types
 
-let basePointerPointerTypes =
-  List.fold_left (fun ptrs t -> (TPtr (t, []))::ptrs) [] basePointerTypes
+let base_pointer_pointer_types =
+  List.fold_left (fun ptrs t -> (TPtr (t, []))::ptrs) [] base_pointer_types
 
-let basePointerPointerPointerTypes =
-  List.fold_left (fun ptrs t -> (TPtr (t, []))::ptrs) [] basePointerPointerTypes
+let base_pointer_pointer_pointer_types =
+  List.fold_left (fun ptrs t -> (TPtr (t, []))::ptrs) [] base_pointer_pointer_types
