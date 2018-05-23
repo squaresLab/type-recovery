@@ -29,22 +29,20 @@ let repeat n elem =
   helper [] n
 
 (* Partitions a list into a list of lists of all contiguous nonempty subsequences
- * e.g.:
- * list_partitions [1;2;3] = [[[1];[2];[3]]; [[1];[2;3]]; [[1;2];[3]]; [[1;2;3]]]*)
-let rec list_partitions l =
-  match l with
+ *
+ * list_partitions [1;2;3] =
+ *   [[[1];[2];[3]]; [[1];[2;3]]; [[1;2];[3]]; [[1;2;3]]]*)
+let rec list_partitions = function
   | [] -> [[]]
-  | x::xs ->
+  | x :: xs ->
      let p = list_partitions xs in
      let fst = List.map (fun elem -> [x]::elem) p in
+     let rest = function
+       | ys :: yss -> (x :: ys) :: yss
+       | _ -> [] in
      match p with
      | [[]] -> fst
-     | _    -> let rest = List.map (fun elem ->
-                              match elem with
-                              | ys::yss -> (x::ys)::yss
-                              | _ -> []
-                            ) p in
-               fst @ rest
+     | _ -> fst @ (List.map rest p)
 
 let parse_one_file (fname : string) : file =
   let cil = Frontc.parse fname () in
