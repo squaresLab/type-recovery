@@ -3,87 +3,76 @@ open Pretty
 open Lib.Utils
 open Lib.Types
 
-module TS = Lib.Typesig
 module E = Errormsg
+module TS = Lib.Typesig
 
-let dispAltTypes types =
-  let type_list = List.fold_left (fun cur typelist ->
-                      cur ^ "[" ^ (strListToStr typelist) ^ "] "
-                    ) "" types
-  in
+let display_alt_types types =
+  let type_list =
+    let pretty_print cur type_list =
+      cur ^ "[" ^ (string_of_string_list type_list) ^ "] " in
+    List.fold_left pretty_print "" types in
   E.log "Alternate types: %s\n" type_list
 
-let funInfo glob =
-  match glob with
+let function_info = function
   | GFun (f, loc) ->
      let return_type =
        match f.svar.vtype with
        | TFun (t, _, _, _) -> t
        | _ -> voidType
      in
-     let alt_types = TS.getAltTypes (TS.typeToOffsets return_type) in
+     let alt_types = TS.get_alt_types (TS.offsets_of_type return_type) in
      E.log "Function: %s has return type %a\n" f.svar.vname d_type return_type;
-     dispAltTypes alt_types;
-     let formals_sig = List.fold_left (fun sigs formal ->
-                           let formal_sig = TS.typeToOffsets formal.vtype in
-                           sigs@formal_sig
-                         ) [] f.sformals
-     in
-     let locals_sig = List.fold_left (fun sigs local ->
-                          let local_sig = TS.typeToOffsets local.vtype in
-                          sigs@local_sig
-                        ) [] f.slocals
-     in
-     let formal_alts = TS.getAltTypes formals_sig in
-     let local_alts = TS.getAltTypes locals_sig in
-     E.log "Formal types: [%s]\n" (listToString
-                                     (fun f ->
-                                       sprint 10 (dprintf "%a" d_type f.vtype)
-                                     ) f.sformals);
-     E.log "Formal sig: [%s]\n" (TS.sigToStr formals_sig);
-     dispAltTypes formal_alts;
-     E.log "Local types: [%s]\n" (listToString
-                                    (fun f ->
-                                      sprint 10 (dprintf "%a" d_type f.vtype)
-                                    ) f.slocals);
-     E.log "Local sig: [%s]\n" (TS.sigToStr locals_sig);
-     dispAltTypes local_alts
+     display_alt_types alt_types;
+
+     let collect_formals sigs formal = sigs @ TS.offsets_of_type formal.vtype in
+     let formals_sig = List.fold_left collect_formals [] f.sformals in
+
+     let collect_locals sigs local = sigs @ (TS.offsets_of_type local.vtype) in
+     let locals_sig = List.fold_left collect_locals [] f.slocals in
+
+     let formal_alts = TS.get_alt_types formals_sig in
+     let local_alts = TS.get_alt_types locals_sig in
+
+     let pp_variable_type v = sprint 10 (dprintf "%a" d_type v.vtype) in
+     E.log "Formal types: [%s]\n" (list_to_string pp_variable_type f.sformals);
+     E.log "Formal sig: [%s]\n" (TS.string_of_sig formals_sig);
+     display_alt_types formal_alts;
+     E.log "Local types: [%s]\n" (list_to_string pp_variable_type f.slocals);
+     E.log "Local sig: [%s]\n" (TS.string_of_sig locals_sig);
+     display_alt_types local_alts
   | _ -> ()
 
-let addBaseTypes () =
-  List.iter (fun t ->
-      let type_sig = TS.typeToOffsets t in
-      TS.addType type_sig (string_of_type t)
-    ) (baseTypes @ basePointerTypes)
+let add_base_types () =
+  let add t = TS.add_type (TS.offsets_of_type t) (string_of_type t) in
+  List.iter add (base_types @ base_pointer_types)
 
-let collectTypes glob =
-  match glob with
+let collect_types = function
   | GType (t, _) ->
-     let type_sig = TS.typeToOffsets t.ttype in
-     TS.addType type_sig t.tname
+     let type_sig = TS.offsets_of_type t.ttype in
+     TS.add_type type_sig t.tname
   | GCompTag (cinfo, _) ->
      let ttype = TComp (cinfo, []) in
-     let type_sig = TS.typeToOffsets ttype in
-     TS.addType type_sig cinfo.cname
+     let type_sig = TS.offsets_of_type ttype in
+     TS.add_type type_sig cinfo.cname
   (* Enums probably need to be treated differently *)
   | GEnumTag (einfo, _) ->
      let ttype = TEnum (einfo, []) in
-     let type_sig = TS.typeToOffsets ttype in
-     TS.addType type_sig einfo.ename
+     let type_sig = TS.offsets_of_type ttype in
+     TS.add_type type_sig einfo.ename
    | _ -> ()
 
 let main () =
   initCIL ();
   let fname = Sys.argv.(1) in
-  let parsed = parseOneFile fname in
-  addBaseTypes ();
-  iterGlobals parsed collectTypes;
-  iterGlobals parsed (fun f ->
-      match f with
-      | GFun _ -> funInfo f; E.log "\n"
-      | _ -> ()
-    );
-  TS.printTypes ()
+  let parsed = parse_one_file fname in
+  add_base_types ();
+  iterGlobals parsed collect_types;
+  let print_fun_info f =
+    match f with
+    | GFun _ -> function_info f; E.log "\n"
+    | _ -> () in
+  iterGlobals parsed print_fun_info;
+  TS.print_types ()
 ;;
 
 main ();

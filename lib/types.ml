@@ -2,6 +2,7 @@
 open Cil
 open Utils
 
+(* Naming convention to match CIL *)
 let scharType      = TInt(ISChar, [])
 let ucharType      = TInt(IUChar, [])
 let boolType       = TInt(IBool,  [])
@@ -12,8 +13,7 @@ let ulonglongType  = TInt(IULongLong, [])
 let floatType      = TFloat(FFloat, [])
 let longdoubleType = TFloat(FLongDouble, [])
 
-let rec string_of_type t =
-  match t with
+let rec string_of_type = function
   | TVoid _     -> "void"
   | TInt (i, _) ->
      begin
@@ -47,29 +47,28 @@ let rec string_of_type t =
   | TArray (t, exp, _) -> (string_of_type t) ^ "[]"
   | _ -> ""
 
-let intTypes = [charType;
-                scharType;
-                ucharType;
-                boolType;
-                intType;
-                uintType;
-                shortType;
-                ushortType;
-                longType;
-                ulongType;
-                longlongType;
-                ulonglongType;
-  ]
+let int_types = [charType;
+                 scharType;
+                 ucharType;
+                 boolType;
+                 intType;
+                 uintType;
+                 shortType;
+                 ushortType;
+                 longType;
+                 ulongType;
+                 longlongType;
+                 ulonglongType;]
 
-let floatTypes = [floatType; doubleType; longdoubleType;]
+let float_types = [floatType; doubleType; longdoubleType;]
 
-let baseTypes = [voidType] @ intTypes @ floatTypes
+let base_types = [voidType] @ int_types @ float_types
 
-let basePointerTypes =
-  List.fold_left (fun ptrs t -> (TPtr (t, []))::ptrs) [] baseTypes
+let add_pointers_to types =
+  let add_pointer ptr t = (TPtr (t, [])) :: ptr in
+  List.fold_left add_pointer [] types
 
-let basePointerPointerTypes =
-  List.fold_left (fun ptrs t -> (TPtr (t, []))::ptrs) [] basePointerTypes
-
-let basePointerPointerPointerTypes =
-  List.fold_left (fun ptrs t -> (TPtr (t, []))::ptrs) [] basePointerPointerTypes
+let base_pointer_types = add_pointers_to base_types
+let base_pointer_pointer_types = add_pointers_to base_pointer_types
+let base_pointer_pointer_pointer_types =
+  add_pointers_to base_pointer_pointer_types

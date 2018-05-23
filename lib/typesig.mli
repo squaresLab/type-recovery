@@ -3,11 +3,11 @@ type memory = | Data of int
 
 type tsig = memory list
 
-val sigToStr : tsig -> string
-val typeToOffsets : Cil.typ -> tsig
-val addType : tsig -> string -> unit
-val getTypenames : tsig -> string list
-val getAltTypes : tsig -> string list list
-val printTypes : unit -> unit
-val toFile : string -> unit
-val fromFile : string -> unit
+val string_of_sig : tsig -> string
+val offsets_of_type : Cil.typ -> tsig
+val add_type : tsig -> string -> unit
+val get_type_names : tsig -> string list
+val get_alt_types : tsig -> string list list
+val print_types : unit -> unit
+val to_file : string -> unit
+val from_file : string -> unit
