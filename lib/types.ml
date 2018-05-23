@@ -13,8 +13,7 @@ let ulonglongType  = TInt(IULongLong, [])
 let floatType      = TFloat(FFloat, [])
 let longdoubleType = TFloat(FLongDouble, [])
 
-let rec string_of_type t =
-  match t with
+let rec string_of_type = function
   | TVoid _     -> "void"
   | TInt (i, _) ->
      begin
