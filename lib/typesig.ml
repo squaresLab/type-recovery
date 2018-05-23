@@ -77,11 +77,11 @@ let get_alt_types (type_sig : tsig) =
   List.fold_left subtypes [] signature_partitions
 
 let print_types () =
-  Hashtbl.iter (fun type_sig type_names ->
-      E.log "Types with signature [%s]: %s\n"
-        (string_of_sig type_sig)
-        (string_of_string_list type_names)
-    ) signatures
+  let print_types_for_signature type_sig type_names =
+    E.log "Types with signature [%s]: %s\n"
+      (string_of_sig type_sig)
+      (string_of_string_list type_names) in
+  Hashtbl.iter print_types_for_signature signatures
 
 let to_file fname =
   Sexp.save fname (sexp_of_sigmap signatures)
