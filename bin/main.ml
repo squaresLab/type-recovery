@@ -47,8 +47,7 @@ let add_base_types () =
   let add t = TS.add_type (TS.offsets_of_type t) (string_of_type t) in
   List.iter add (base_types @ base_pointer_types)
 
-let collect_types glob =
-  match glob with
+let collect_types = function
   | GType (t, _) ->
      let type_sig = TS.offsets_of_type t.ttype in
      TS.add_type type_sig t.tname
