@@ -1,11 +1,11 @@
 open Cil
 
 let list_to_string f l =
+  let append cur next = Printf.sprintf "%s, %s" cur (f next) in
   match l with
-  | [] -> ""
   | fst::[] -> f fst
-  | fst::rest ->
-     List.fold_left (fun cur next -> Printf.sprintf "%s, %s" cur (f next)) (f fst) rest
+  | fst::rest -> List.fold_left append (f fst) rest
+  | [] -> ""
 
 let string_of_string_list l =
   list_to_string (fun x -> x) l
