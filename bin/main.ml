@@ -24,28 +24,21 @@ let function_info glob =
      let alt_types = TS.get_alt_types (TS.offsets_of_type return_type) in
      E.log "Function: %s has return type %a\n" f.svar.vname d_type return_type;
      display_alt_types alt_types;
-     let formals_sig = List.fold_left (fun sigs formal ->
-                           let formal_sig = TS.offsets_of_type formal.vtype in
-                           sigs@formal_sig
-                         ) [] f.sformals
-     in
-     let locals_sig = List.fold_left (fun sigs local ->
-                          let local_sig = TS.offsets_of_type local.vtype in
-                          sigs@local_sig
-                        ) [] f.slocals
-     in
+
+     let collect_formals sigs formal = sigs @ TS.offsets_of_type formal.vtype in
+     let formals_sig = List.fold_left collect_formals [] f.sformals in
+
+     let collect_locals sigs local = sigs @ (TS.offsets_of_type local.vtype) in
+     let locals_sig = List.fold_left collect_locals [] f.slocals in
+
      let formal_alts = TS.get_alt_types formals_sig in
      let local_alts = TS.get_alt_types locals_sig in
-     E.log "Formal types: [%s]\n" (list_to_string
-                                     (fun f ->
-                                       sprint 10 (dprintf "%a" d_type f.vtype)
-                                     ) f.sformals);
+
+     let pp_variable_type v = sprint 10 (dprintf "%a" d_type v.vtype) in
+     E.log "Formal types: [%s]\n" (list_to_string pp_variable_type f.sformals);
      E.log "Formal sig: [%s]\n" (TS.string_of_sig formals_sig);
      display_alt_types formal_alts;
-     E.log "Local types: [%s]\n" (list_to_string
-                                    (fun f ->
-                                      sprint 10 (dprintf "%a" d_type f.vtype)
-                                    ) f.slocals);
+     E.log "Local types: [%s]\n" (list_to_string pp_variable_type f.slocals);
      E.log "Local sig: [%s]\n" (TS.string_of_sig locals_sig);
      display_alt_types local_alts
   | _ -> ()
