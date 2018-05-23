@@ -67,8 +67,3 @@ let base_types = [voidType] @ int_types @ float_types
 let add_pointers_to types =
   let add_pointer ptr t = (TPtr (t, [])) :: ptr in
   List.fold_left add_pointer [] types
-
-let base_pointer_types = add_pointers_to base_types
-let base_pointer_pointer_types = add_pointers_to base_pointer_types
-let base_pointer_pointer_pointer_types =
-  add_pointers_to base_pointer_pointer_types

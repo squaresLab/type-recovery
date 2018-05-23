@@ -44,6 +44,7 @@ let function_info = function
 
 let add_base_types () =
   let add t = TS.add_type (TS.offsets_of_type t) (string_of_type t) in
+  let base_pointer_types = add_pointers_to base_types in
   List.iter add (base_types @ base_pointer_types)
 
 let collect_types = function
