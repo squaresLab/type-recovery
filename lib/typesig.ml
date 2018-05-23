@@ -15,7 +15,7 @@ type sigmap = (tsig, string list) Hashtbl.t [@@deriving sexp]
 let signatures : sigmap = Hashtbl.create 3
 
 let sigToStr (t : tsig) =
-  listToString (fun s ->
+  list_to_string (fun s ->
       match s with
       | Data x -> string_of_int x
       | Padding x -> Printf.sprintf "P%d" x) t
@@ -79,7 +79,7 @@ let getAltTypes (type_sig : tsig) =
     List.filter
       (List.for_all
          (fun s -> Hashtbl.mem signatures s))
-      (listPartitions type_sig) in
+      (list_partitions type_sig) in
   List.fold_left (fun type_lists part ->
       let part_types = List.map (fun s -> Hashtbl.find signatures s) part in
       (product part_types)@type_lists
@@ -89,7 +89,7 @@ let printTypes () =
   Hashtbl.iter (fun type_sig type_names ->
       E.log "Types with signature [%s]: %s\n"
         (sigToStr type_sig)
-        (strListToStr type_names)
+        (string_of_string_list type_names)
     ) signatures
 
 let toFile fname =

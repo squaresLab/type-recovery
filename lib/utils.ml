@@ -1,17 +1,17 @@
 open Cil
 
-let listToString f l =
+let list_to_string f l =
   match l with
   | [] -> ""
   | fst::[] -> f fst
   | fst::rest ->
      List.fold_left (fun cur next -> Printf.sprintf "%s, %s" cur (f next)) (f fst) rest
 
-let strListToStr l =
-  listToString (fun x -> x) l
+let string_of_string_list l =
+  list_to_string (fun x -> x) l
 
-let intListToStr l =
-  listToString string_of_int l
+let string_of_int_list l =
+  list_to_string string_of_int l
 
 (* product [[1;2];[3;4];[5;6]] = [[1;3;5];[1;3;6];[1;4;5];[1;4;6]...[2;4;6]] *)
 let rec product l =
@@ -33,12 +33,12 @@ let repeat n elem =
 
 (* Partitions a list into a list of lists of all contiguous nonempty subsequences
  * e.g.:
- * listPartitions [1;2;3] = [[[1];[2];[3]]; [[1];[2;3]]; [[1;2];[3]]; [[1;2;3]]]*)
-let rec listPartitions l =
+ * list_partitions [1;2;3] = [[[1];[2];[3]]; [[1];[2;3]]; [[1;2];[3]]; [[1;2;3]]]*)
+let rec list_partitions l =
   match l with
   | [] -> [[]]
   | x::xs ->
-     let p = listPartitions xs in
+     let p = list_partitions xs in
      let fst = List.map (fun elem -> [x]::elem) p in
      match p with
      | [[]] -> fst
@@ -49,6 +49,6 @@ let rec listPartitions l =
                             ) p in
                fst @ rest
 
-let parseOneFile (fname : string) : file =
+let parse_one_file (fname : string) : file =
   let cil = Frontc.parse fname () in
   cil

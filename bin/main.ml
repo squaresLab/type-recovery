@@ -8,7 +8,7 @@ module E = Errormsg
 
 let dispAltTypes types =
   let type_list = List.fold_left (fun cur typelist ->
-                      cur ^ "[" ^ (strListToStr typelist) ^ "] "
+                      cur ^ "[" ^ (string_of_string_list typelist) ^ "] "
                     ) "" types
   in
   E.log "Alternate types: %s\n" type_list
@@ -36,13 +36,13 @@ let funInfo glob =
      in
      let formal_alts = TS.getAltTypes formals_sig in
      let local_alts = TS.getAltTypes locals_sig in
-     E.log "Formal types: [%s]\n" (listToString
+     E.log "Formal types: [%s]\n" (list_to_string
                                      (fun f ->
                                        sprint 10 (dprintf "%a" d_type f.vtype)
                                      ) f.sformals);
      E.log "Formal sig: [%s]\n" (TS.sigToStr formals_sig);
-     dispAltTypes formal_alts;
-     E.log "Local types: [%s]\n" (listToString
+     display_alt_types formal_alts;
+     E.log "Local types: [%s]\n" (list_to_string
                                     (fun f ->
                                       sprint 10 (dprintf "%a" d_type f.vtype)
                                     ) f.slocals);
@@ -75,9 +75,9 @@ let collectTypes glob =
 let main () =
   initCIL ();
   let fname = Sys.argv.(1) in
-  let parsed = parseOneFile fname in
-  addBaseTypes ();
-  iterGlobals parsed collectTypes;
+  let parsed = parse_one_file fname in
+  add_base_types ();
+  iterGlobals parsed collect_types;
   iterGlobals parsed (fun f ->
       match f with
       | GFun _ -> funInfo f; E.log "\n"
