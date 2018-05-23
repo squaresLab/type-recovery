@@ -36,20 +36,16 @@ let offsets_of_type (t : typ) : tsig =
      end
   | TComp (cinfo, _) when cinfo.cstruct ->
      let align_bits = 8 * (alignOf_int t) in
-     let add_padded_memory (offsets, cur_align) field =
+     let add_padded_memory (offsets, cur_padding) field =
        let tsize = bitsSizeOf field.ftype in
-       let next_align =
+       let next_padding =
          match tsize mod align_bits with
          | 0 -> 0
          | t -> align_bits - t in
-       match cur_align with
-       | 0 -> ((Data tsize) :: offsets, next_align)
-       | c ->
-          begin
-            match field.ftype with
-            | TInt (IChar, _) -> ((Data 8) :: offsets, c - 8)
-            | t -> ((Data tsize) :: (Padding c) :: offsets, next_align)
-          end in
+       match cur_padding, field.ftype with
+       | 0, _ -> ((Data tsize) :: offsets, next_padding)
+       | p, TInt (IChar, _) -> ((Data 8) :: offsets, p - 8)
+       | p, t -> ((Data tsize) :: (Padding p) :: offsets, next_padding) in
      let (info, _) = List.fold_left add_padded_memory ([], 0) cinfo.cfields in
      List.rev info
   | _ -> [Data (bitsSizeOf t)]
