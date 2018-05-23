@@ -15,10 +15,10 @@ type sigmap = (tsig, string list) Hashtbl.t [@@deriving sexp]
 let signatures : sigmap = Hashtbl.create 3
 
 let string_of_sig (t : tsig) =
-  list_to_string (fun s ->
-      match s with
-      | Data x -> string_of_int x
-      | Padding x -> Printf.sprintf "P%d" x) t
+  let string_of_memory = function
+    | Data x -> string_of_int x
+    | Padding x -> Printf.sprintf "P%d" x in
+  list_to_string string_of_memory t
 
 let offsets_of_type (t : typ) : tsig =
   match t with
