@@ -7,10 +7,10 @@ module E = Errormsg
 module TS = Lib.Typesig
 
 let display_alt_types types =
-  let type_list = List.fold_left (fun cur typelist ->
-                      cur ^ "[" ^ (string_of_string_list typelist) ^ "] "
-                    ) "" types
-  in
+  let type_list =
+    let pretty_print cur type_list =
+      cur ^ "[" ^ (string_of_string_list type_list) ^ "] " in
+    List.fold_left pretty_print "" types in
   E.log "Alternate types: %s\n" type_list
 
 let function_info glob =
