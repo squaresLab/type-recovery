@@ -24,8 +24,7 @@ let repeat n elem =
   let rec helper acc n =
     match n with
     | 0 -> acc
-    | _ -> helper (elem::acc) (n-1)
-  in
+    | _ -> helper (elem::acc) (n-1) in
   helper [] n
 
 (* Partitions a list into a list of lists of all contiguous nonempty subsequences
