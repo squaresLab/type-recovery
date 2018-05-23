@@ -44,10 +44,8 @@ let function_info glob =
   | _ -> ()
 
 let add_base_types () =
-  List.iter (fun t ->
-      let type_sig = TS.offsets_of_type t in
-      TS.add_type type_sig (string_of_type t)
-    ) (base_types @ base_pointer_types)
+  let add t = TS.add_type (TS.offsets_of_type t) (string_of_type t) in
+  List.iter add (base_types @ base_pointer_types)
 
 let collect_types glob =
   match glob with
