@@ -12,13 +12,12 @@ let string_of_string_list l = list_to_string (fun x -> x) l
 let string_of_int_list l = list_to_string string_of_int l
 
 (* product [[1;2];[3;4];[5;6]] = [[1;3;5];[1;3;6];[1;4;5];[1;4;6]...[2;4;6]] *)
-let rec product l =
-  match l with
-  | hd::tl -> List.fold_left (fun cur elem ->
-                  let p = product tl in
-                  let next = List.map (fun x -> elem::x) p in
-                  cur @ next
-                ) [] hd
+let rec product = function
+  | hd::tl ->
+     let helper cur elem =
+       let next = List.map (fun x -> elem :: x) (product tl) in
+       cur @ next in
+     List.fold_left helper [] hd
   | _ -> [[]]
 
 let repeat n elem =
