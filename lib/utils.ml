@@ -44,6 +44,4 @@ let rec list_partitions = function
      | [[]] -> fst
      | _ -> fst @ (List.map rest p)
 
-let parse_one_file (fname : string) : file =
-  let cil = Frontc.parse fname () in
-  cil
+let parse_one_file (fname : string) : file = Frontc.parse fname ()
