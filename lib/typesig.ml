@@ -83,8 +83,7 @@ let print_types () =
       (string_of_string_list type_names) in
   Hashtbl.iter print_types_for_signature signatures
 
-let to_file fname =
-  Sexp.save fname (sexp_of_sigmap signatures)
+let to_file fname = Sexp.save fname (sexp_of_sigmap signatures)
 
 let from_file fname =
   let s = sigmap_of_sexp (Sexp.load_sexp fname) in
