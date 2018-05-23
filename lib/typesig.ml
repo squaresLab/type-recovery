@@ -59,7 +59,7 @@ let add_type type_sig name =
   match cur_types with
   | None -> Hashtbl.replace signatures type_sig [name]
   | Some ts when not (List.mem name ts) ->
-     Hashtbl.replace signatures type_sig (name::ts)
+     Hashtbl.replace signatures type_sig (name :: ts)
   | _ -> ()
 
 let get_type_names type_sig =
@@ -69,14 +69,12 @@ let get_type_names type_sig =
 
 let get_alt_types (type_sig : tsig) =
   let signature_partitions =
-    List.filter
-      (List.for_all
-         (fun s -> Hashtbl.mem signatures s))
-      (list_partitions type_sig) in
-  List.fold_left (fun type_lists part ->
-      let part_types = List.map (fun s -> Hashtbl.find signatures s) part in
-      (product part_types)@type_lists
-    ) [] signature_partitions
+    let valid_signature = List.for_all (fun s -> Hashtbl.mem signatures s) in
+    List.filter valid_signature (list_partitions type_sig)
+  and subtypes type_lists part =
+    let part_types = List.map (fun s -> Hashtbl.find signatures s) part in
+    (product part_types) @ type_lists in
+  List.fold_left subtypes [] signature_partitions
 
 let print_types () =
   Hashtbl.iter (fun type_sig type_names ->
