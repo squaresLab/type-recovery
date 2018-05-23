@@ -7,11 +7,9 @@ let list_to_string f l =
   | fst::rest -> List.fold_left append (f fst) rest
   | [] -> ""
 
-let string_of_string_list l =
-  list_to_string (fun x -> x) l
+let string_of_string_list l = list_to_string (fun x -> x) l
 
-let string_of_int_list l =
-  list_to_string string_of_int l
+let string_of_int_list l = list_to_string string_of_int l
 
 (* product [[1;2];[3;4];[5;6]] = [[1;3;5];[1;3;6];[1;4;5];[1;4;6]...[2;4;6]] *)
 let rec product l =
