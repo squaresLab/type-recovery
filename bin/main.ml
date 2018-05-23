@@ -69,11 +69,11 @@ let main () =
   let parsed = parse_one_file fname in
   add_base_types ();
   iterGlobals parsed collect_types;
-  iterGlobals parsed (fun f ->
-      match f with
-      | GFun _ -> function_info f; E.log "\n"
-      | _ -> ()
-    );
+  let print_fun_info f =
+    match f with
+    | GFun _ -> function_info f; E.log "\n"
+    | _ -> () in
+  iterGlobals parsed print_fun_info;
   TS.print_types ()
 ;;
 
