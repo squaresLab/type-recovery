@@ -3,17 +3,17 @@ open Pretty
 open Lib.Utils
 open Lib.Types
 
-module TS = Lib.Typesig
 module E = Errormsg
+module TS = Lib.Typesig
 
-let dispAltTypes types =
+let display_alt_types types =
   let type_list = List.fold_left (fun cur typelist ->
                       cur ^ "[" ^ (string_of_string_list typelist) ^ "] "
                     ) "" types
   in
   E.log "Alternate types: %s\n" type_list
 
-let funInfo glob =
+let function_info glob =
   match glob with
   | GFun (f, loc) ->
      let return_type =
@@ -23,7 +23,7 @@ let funInfo glob =
      in
      let alt_types = TS.get_alt_types (TS.offsets_of_type return_type) in
      E.log "Function: %s has return type %a\n" f.svar.vname d_type return_type;
-     dispAltTypes alt_types;
+     display_alt_types alt_types;
      let formals_sig = List.fold_left (fun sigs formal ->
                            let formal_sig = TS.offsets_of_type formal.vtype in
                            sigs@formal_sig
@@ -46,17 +46,17 @@ let funInfo glob =
                                     (fun f ->
                                       sprint 10 (dprintf "%a" d_type f.vtype)
                                     ) f.slocals);
-     dispAltTypes local_alts
      E.log "Local sig: [%s]\n" (TS.string_of_sig locals_sig);
+     display_alt_types local_alts
   | _ -> ()
 
-let addBaseTypes () =
+let add_base_types () =
   List.iter (fun t ->
       let type_sig = TS.offsets_of_type t in
       TS.add_type type_sig (string_of_type t)
     ) (base_types @ base_pointer_types)
 
-let collectTypes glob =
+let collect_types glob =
   match glob with
   | GType (t, _) ->
      let type_sig = TS.offsets_of_type t.ttype in
@@ -80,7 +80,7 @@ let main () =
   iterGlobals parsed collect_types;
   iterGlobals parsed (fun f ->
       match f with
-      | GFun _ -> funInfo f; E.log "\n"
+      | GFun _ -> function_info f; E.log "\n"
       | _ -> ()
     );
   TS.print_types ()
