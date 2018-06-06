@@ -34,10 +34,10 @@ let function_info = function
      let local_alts = TS.get_alt_types locals_sig in
 
      let pp_variable_type v = sprint 10 (dprintf "%a" d_type v.vtype) in
-     E.log "Formal types: [%s]\n" (list_to_string pp_variable_type f.sformals);
+     E.log "Formal types: [%s]\n" (string_of_list pp_variable_type f.sformals);
      E.log "Formal sig: [%s]\n" (TS.string_of_sig formals_sig);
      display_alt_types formal_alts;
-     E.log "Local types: [%s]\n" (list_to_string pp_variable_type f.slocals);
+     E.log "Local types: [%s]\n" (string_of_list pp_variable_type f.slocals);
      E.log "Local sig: [%s]\n" (TS.string_of_sig locals_sig);
      display_alt_types local_alts
   | _ -> ()

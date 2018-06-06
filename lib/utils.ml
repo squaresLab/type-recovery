@@ -1,15 +1,29 @@
 open Cil
 
-let list_to_string f l =
+let string_of_list f l =
   let append cur next = Printf.sprintf "%s, %s" cur (f next) in
   match l with
   | fst::[] -> f fst
   | fst::rest -> List.fold_left append (f fst) rest
   | [] -> ""
 
-let string_of_string_list l = list_to_string (fun x -> x) l
+let string_of_string_list l = string_of_list (fun x -> x) l
 
-let string_of_int_list l = list_to_string string_of_int l
+let string_of_int_list l = string_of_list string_of_int l
+
+let string_of_file fname : string =
+  let b = Buffer.create 255 in
+  let fin = open_in fname in
+  begin
+    try
+      while true do
+        let line = input_line fin in
+        Buffer.add_string b line;
+        Buffer.add_char b '\n';
+      done;
+    with End_of_file -> close_in fin
+  end;
+  Buffer.contents b
 
 (* product [[1;2];[3;4];[5;6]] = [[1;3;5];[1;3;6];[1;4;5];[1;4;6]...[2;4;6]] *)
 let rec product = function

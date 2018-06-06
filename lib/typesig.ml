@@ -18,7 +18,7 @@ let string_of_sig (t : tsig) =
   let string_of_memory = function
     | Data x -> string_of_int x
     | Padding x -> Printf.sprintf "P%d" x in
-  list_to_string string_of_memory t
+  string_of_list string_of_memory t
 
 let offsets_of_type (t : typ) : tsig =
   match t with
