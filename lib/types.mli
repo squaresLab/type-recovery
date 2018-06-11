@@ -9,6 +9,8 @@ val floatType : Cil.typ
 val longdoubleType : Cil.typ
 
 val string_of_type : Cil.typ -> string
+val string_of_exp : Cil.exp -> string
+val string_of_lval : Cil.lval -> string
 val int_types : Cil.typ list
 val float_types : Cil.typ list
 val base_types : Cil.typ list

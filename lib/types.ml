@@ -47,6 +47,28 @@ let rec string_of_type = function
   | TArray (t, exp, _) -> (string_of_type t) ^ "[]"
   | _ -> ""
 
+let string_of_exp exp =
+  let exp_doc = Pretty.dprintf "%a" d_exp exp in
+  Pretty.sprint 80000 exp_doc
+
+let rec string_of_offset = function
+  | NoOffset -> ""
+  | Field (fieldinfo, offset) ->
+     let next_offset = string_of_offset offset in
+     Printf.sprintf ".%s%s" fieldinfo.fname next_offset
+  | Index (exp, offset) ->
+     let exp_string = string_of_exp exp in
+     let next_offset = string_of_offset offset in
+     Printf.sprintf "[%s]%s" exp_string next_offset
+
+let rec string_of_lval = function
+  | (Var (v), offset) ->
+     let type_string = string_of_type v.vtype in
+     let offset_string = string_of_offset offset in
+     Printf.sprintf "<%s> %s%s" type_string v.vname offset_string
+  | (Mem (exp), offset) ->
+     "*" ^ string_of_exp exp
+
 let int_types = [charType;
                  scharType;
                  ucharType;
