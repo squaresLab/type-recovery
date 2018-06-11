@@ -1,2 +1,4 @@
 */.merlin
 _build
+*.mypy_cache/
+*__pycache__/
