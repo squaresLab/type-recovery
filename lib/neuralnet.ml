@@ -1,7 +1,5 @@
 let initialize =
-  let version = Some 3 in
-  let minor = Some 6 in
-  Py.initialize ?version:version ?minor:minor ()
+  Py.initialize ~version:3 ~minor:6 ()
 
 let test_dynet () =
   let import_sys =
