@@ -1,6 +1,7 @@
 open Cil
 open Cilprinter
 open Printf
+open Types
 
 module E = Errormsg
 
@@ -51,29 +52,22 @@ class var_collector = object(self)
   method vstmt stmt =
     let output_instruction operation instruction =
       match instruction with
-      | Set ((Var (v), offset), exp, loc)
-        | Call (Some (Var (v), offset), exp, _, loc) ->
-         let var_name =
-           match offset with
-           | Field (fieldinfo, offset) ->
-              Printf.sprintf "%s.%s" v.vname fieldinfo.fname
-           | Index (exp, offset) ->
-              let exp_doc = Pretty.dprintf "%a" d_exp exp in
-              let exp_string = Pretty.sprint 80000 exp_doc in
-              Printf.sprintf "%s[%s]" v.vname exp_string
-           | NoOffset -> v.vname
-         in
+      | Set (lval, exp, loc)
+        | Call (Some (lval), exp, _, loc) ->
+         let lval_name = string_of_lval lval in
          let context_doc = Pretty.dprintf "%s: %a" operation d_exp exp in
          let context = Pretty.sprint 80000 context_doc in
-         self#add_context var_name context
-      | _ -> E.log "Other instruction"
+         self#add_context lval_name context
+      | Asm _ -> E.log "Inline assembly is unhandled\n"
+      | _ -> E.log "Unhandled case"
     in
     let output_exp operation exp =
       match exp with
-      | Lval (Var (v), _) ->
+      | Lval lval ->
+         let lval_name = string_of_lval lval in
          let context_doc = Pretty.dprintf "%s: %a" operation d_exp exp in
          let context = Pretty.sprint 80000 context_doc in
-         self#add_context v.vname context
+         self#add_context lval_name context
       | _ -> ()
     in
     match stmt.skind with
