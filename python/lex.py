@@ -37,13 +37,14 @@ class Lexer:
     def __init__(self, file_path):
         self.program_text = open(file_path, 'r').read()
         lexer = BetterCLexer()
-        self.__tokenize(self.program_text, lexer)
-
-    def __tokenize(self, program_text, lexer):
-        self.token_list = list(lex(program_text, lexer))
+        self.token_list = list(lex(self.program_text, lexer))
 
     def get_tokens(self):
         return Lexer.format_token_list(self.token_list)
+
+    def replace_tokens_named(self, token_name, replace_with="!TOKEN!"):
+        tokens = self.get_tokens()
+        return [t.replace(token_name, replace_with) for t in tokens]
 
     @staticmethod
     def format_token_list(token_list):
@@ -54,3 +55,8 @@ class Lexer:
             elif not is_token_subtype(token_type, Token.Text):
                 tokens.append(token.strip())
         return tokens
+
+
+def tokenize(file_name):
+    lexer = Lexer(file_name)
+    return lexer.get_tokens()
