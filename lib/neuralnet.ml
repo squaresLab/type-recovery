@@ -1,6 +1,6 @@
 open Pyutils
 
-let py_neuralnet = get_module "lib.pynn.neuralnet"
+let py_neuralnet = get_module "python.neuralnet"
 
 let py_train srnn params_srnn sentence =
   let sentence = Py.String.of_string sentence in
