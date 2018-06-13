@@ -52,6 +52,10 @@ class Lexer:
         for (token_type, token) in token_list:
             if is_token_subtype(token_type, Token.Comment):
                 continue
+            elif is_token_subtype(token_type, Token.Literal.Number):
+                tokens.append('0')
+            elif is_token_subtype(token_type, Token.Literal.String):
+                tokens.append('!STRING!')
             elif not is_token_subtype(token_type, Token.Text):
                 tokens.append(token.strip())
         return tokens
