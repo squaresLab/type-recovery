@@ -3,29 +3,42 @@ import sys
 if not hasattr(sys, 'argv'):
     sys.argv = ['']
 
+import dynet_config
+dynet_config.set_gpu()
 import dynet as dy
 import random
 from collections import defaultdict
 from itertools import count
-from ocaml import io_pairs, vocab
+from ocaml import io_pairs, input_vocab, output_vocab
 
+SEQUENCE_LENGTH = 300
 LAYERS = 2
-INPUT_DIM = 300
+INPUT_DIM = SEQUENCE_LENGTH
 HIDDEN_DIM = 300
 
-vocab = list(vocab)
-vocab.append("<EOS>")
-int2tok = list(vocab)
-tok2int = {t:i for i,t in enumerate(vocab)}
-VOCAB_SIZE = len(vocab)
+input_vocab = list(input_vocab)
+input_vocab.append("<EOS>")
+int2input_token = list(input_vocab)
+input_token2int = {t:i for i,t in enumerate(input_vocab)}
+VOCAB_SIZE = len(input_vocab)
+
+output_vocab = list(output_vocab)
+output_vocab.append("<???>")
+output_vocab.append("<EOS>")
+int2output_token = list(output_vocab)
+output_token2int = {t:i for i,t in enumerate(output_vocab)}
+OUTPUT_VOCAB_SIZE = len(output_vocab)
 
 training_pairs = []
 for f in io_pairs:
     eos = ("<EOS>", "<EOS>")
-    if len(f) <= 298:
+    input_size = SEQUENCE_LENGTH - 2
+    if len(f) <= input_size:
         training_pairs += [eos] + f + [eos]
     else:
-        training_pairs += [[eos] + f[i:i+298] + [eos] for i in range(0, len(f)-298)]
+        training_pairs += [[eos] + f[i:i+input_size] + [eos]
+                           for i in range(0, len(f)-input_size)]
+print(len(training_pairs), " training pairs")
 
 pc = dy.ParameterCollection()
 
@@ -38,8 +51,8 @@ params_lstm = {}
 params_srnn = {}
 for params in [params_lstm, params_srnn]:
     params["lookup"] = pc.add_lookup_parameters((VOCAB_SIZE, INPUT_DIM))
-    params["R"] = pc.add_parameters((VOCAB_SIZE, HIDDEN_DIM))
-    params["bias"] = pc.add_parameters((VOCAB_SIZE))
+    params["R"] = pc.add_parameters((OUTPUT_VOCAB_SIZE, HIDDEN_DIM))
+    params["bias"] = pc.add_parameters((OUTPUT_VOCAB_SIZE))
 
 # return compute loss of RNN for one sequence
 def do_one_sequence(rnn, params, sequence):
@@ -50,8 +63,8 @@ def do_one_sequence(rnn, params, sequence):
     R = params["R"]
     bias = params["bias"]
     lookup = params["lookup"]
-    input_sequence = [tok2int[t] for (t, _) in sequence]
-    output_sequence = [tok2int[t] for (_, t) in sequence]
+    input_sequence = [input_token2int[t] for (t, _) in sequence]
+    output_sequence = [output_token2int[t] for (_, t) in sequence]
     s = s0
     loss = []
     for input_token, output_token in zip(input_sequence, output_sequence):
@@ -62,7 +75,7 @@ def do_one_sequence(rnn, params, sequence):
     return loss
 
 # generate from model:
-def generate(rnn, params):
+def generate(rnn, params, input_sequence):
     def sample(probs):
         rnd = random.random()
         for i,p in enumerate(probs):
@@ -72,22 +85,19 @@ def generate(rnn, params):
 
     # setup the sentence
     dy.renew_cg()
-    s0 = rnn.initial_state()
+    s = rnn.initial_state()
 
     R = params["R"]
     bias = params["bias"]
     lookup = params["lookup"]
 
-    s = s0.add_input(lookup[tok2int["<EOS>"]])
     out=[]
-    while True:
+    for i in input_sequence:
+        s = s.add_input(lookup[input_token2int[i]])
         probs = dy.softmax(R*s.output() + bias)
         probs = probs.vec_value()
-        next_token = sample(probs)
-        out.append(int2tok[next_token])
-        if out[-1] == "<EOS>": break
-        s = s.add_input(lookup[next_token])
-    return " ".join(out[:50]) # strip the <EOS>
+        out.append(int2output_token[sample(probs)])
+    return " ".join(out)
 
 def train(rnn, params, sequence):
     trainer = dy.SimpleSGDTrainer(pc)
@@ -97,9 +107,13 @@ def train(rnn, params, sequence):
         loss.backward()
         trainer.update()
         if i % 5 == 0:
-            print("%.10f" % loss_value, end="\t")
-            print(generate(rnn, params))
+            input_sequence = [i for (i, o) in sequence]
+            output_sequence = [o for (i, o) in sequence]
+            print("%.10f" % loss_value)
+            print(" ".join(output_sequence))
+            print(generate(rnn, params, input_sequence))
 
 def run():
     for sequence in training_pairs:
         train(srnn, params_srnn, sequence)
+    pc.save("nn.model")
