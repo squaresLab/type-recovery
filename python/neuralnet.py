@@ -11,6 +11,10 @@ from collections import defaultdict
 from itertools import count
 from ocaml import io_pairs, input_vocab, output_vocab
 
+RED = "\x1b[1;31m"
+GREEN = "\x1b[1;32m"
+END_COLOR = "\x1b[0m"
+
 SEQUENCE_LENGTH = 300
 LAYERS = 2
 INPUT_DIM = SEQUENCE_LENGTH
@@ -97,7 +101,7 @@ def generate(rnn, params, input_sequence):
         probs = dy.softmax(R*s.output() + bias)
         probs = probs.vec_value()
         out.append(int2output_token[sample(probs)])
-    return " ".join(out)
+    return out
 
 def train(rnn, params, sequence):
     trainer = dy.SimpleSGDTrainer(pc)
@@ -111,9 +115,17 @@ def train(rnn, params, sequence):
             print("iteration %d of %d" % ((i+1), iterations))
             input_sequence = [i for (i, o) in sequence]
             output_sequence = [o for (i, o) in sequence]
+            guessed_sequence = generate(rnn, params, input_sequence)
+            report = []
+            for actual, guessed in zip(output_sequence, guessed_sequence):
+                if actual == guessed:
+                    report += [GREEN + guessed + END_COLOR]
+                else:
+                    report += [RED + guessed + END_COLOR]
             print("%.10f" % loss_value)
-            print(" ".join(output_sequence))
-            print(generate(rnn, params, input_sequence))
+            for token in report:
+                print(token, end=" ")
+            print()
 
 def run():
     for i, sequence in enumerate(training_pairs):
