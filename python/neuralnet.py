@@ -7,6 +7,7 @@ import dynet as dy
 import random
 from collections import defaultdict
 from itertools import count
+from ocaml import vocab
 
 LAYERS = 1
 INPUT_DIM = 50
