@@ -12,6 +12,8 @@ type tsig = memory list [@@deriving sexp]
 
 type sigmap = (tsig, string list) Hashtbl.t [@@deriving sexp]
 
+let current_signature_id = ref 0
+let ids : (tsig, int) Hashtbl.t = Hashtbl.create 3
 let signatures : sigmap = Hashtbl.create 3
 
 let string_of_sig (t : tsig) =
@@ -19,6 +21,8 @@ let string_of_sig (t : tsig) =
     | Data x -> string_of_int x
     | Padding x -> Printf.sprintf "P%d" x in
   string_of_list string_of_memory t
+
+let signature_id (t: tsig) = Hashtbl.find ids t
 
 let offsets_of_type (t : typ) : tsig =
   match t with
@@ -53,9 +57,13 @@ let offsets_of_type (t : typ) : tsig =
 let add_type type_sig name =
   let cur_types = Hashtbl.find_opt signatures type_sig in
   match cur_types with
-  | None -> Hashtbl.replace signatures type_sig [name]
+  | None -> begin
+      Hashtbl.replace ids type_sig !current_signature_id;
+      current_signature_id := !current_signature_id + 1;
+      Hashtbl.replace signatures type_sig [name]
+    end
   | Some ts when not (List.mem name ts) ->
-     Hashtbl.replace signatures type_sig (name :: ts)
+      Hashtbl.replace signatures type_sig (name :: ts)
   | _ -> ()
 
 let get_type_names type_sig =
