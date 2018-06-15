@@ -15,11 +15,6 @@ RED = "\x1b[1;31m"
 GREEN = "\x1b[1;32m"
 END_COLOR = "\x1b[0m"
 
-SEQUENCE_LENGTH = 300
-LAYERS = 2
-INPUT_DIM = SEQUENCE_LENGTH
-HIDDEN_DIM = 300
-
 input_vocab = list(input_vocab)
 int2input_token = list(input_vocab)
 input_token2int = {t:i for i,t in enumerate(input_vocab)}
@@ -30,6 +25,11 @@ output_vocab.append("<???>")
 int2output_token = list(output_vocab)
 output_token2int = {t:i for i,t in enumerate(output_vocab)}
 OUTPUT_VOCAB_SIZE = len(output_vocab)
+
+SEQUENCE_LENGTH = 300
+LAYERS = 2
+INPUT_DIM = SEQUENCE_LENGTH
+HIDDEN_DIM = (SEQUENCE_LENGTH + OUTPUT_VOCAB_SIZE) / 2
 
 training_pairs = []
 for f in io_pairs:
