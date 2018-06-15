@@ -38,6 +38,7 @@ for f in io_pairs:
         training_pairs += f
     else:
         training_pairs += [f[i:i+input_size] for i in range(0, len(f)-input_size)]
+random.shuffle(training_pairs)
 print(len(training_pairs), " training pairs")
 print(len(output_vocab)-1, " possible types")
 
