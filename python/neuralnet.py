@@ -7,19 +7,25 @@ import dynet as dy
 import random
 from collections import defaultdict
 from itertools import count
-from ocaml import vocab
+from ocaml import io_pairs, vocab
 
-LAYERS = 1
-INPUT_DIM = 50
-HIDDEN_DIM = 50
+LAYERS = 2
+INPUT_DIM = 300
+HIDDEN_DIM = 300
 
-characters = list("abcdefghijklmnopqrstuvwxyz ")
-characters.append("<EOS>")
+vocab = list(vocab)
+vocab.append("<EOS>")
+int2tok = list(vocab)
+tok2int = {t:i for i,t in enumerate(vocab)}
+VOCAB_SIZE = len(vocab)
 
-int2char = list(characters)
-char2int = {c:i for i,c in enumerate(characters)}
-
-VOCAB_SIZE = len(characters)
+training_pairs = []
+for f in io_pairs:
+    eos = ("<EOS>", "<EOS>")
+    if len(f) <= 298:
+        training_pairs += [eos] + f + [eos]
+    else:
+        training_pairs += [[eos] + f[i:i+298] + [eos] for i in range(0, len(f)-298)]
 
 pc = dy.ParameterCollection()
 
@@ -35,24 +41,23 @@ for params in [params_lstm, params_srnn]:
     params["R"] = pc.add_parameters((VOCAB_SIZE, HIDDEN_DIM))
     params["bias"] = pc.add_parameters((VOCAB_SIZE))
 
-# return compute loss of RNN for one sentence
-def do_one_sentence(rnn, params, sentence):
-    # setup the sentence
+# return compute loss of RNN for one sequence
+def do_one_sequence(rnn, params, sequence):
+    # setup the sequence
     dy.renew_cg()
     s0 = rnn.initial_state()
-
 
     R = params["R"]
     bias = params["bias"]
     lookup = params["lookup"]
-    sentence = ["<EOS>"] + list(sentence) + ["<EOS>"]
-    sentence = [char2int[c] for c in sentence]
+    input_sequence = [tok2int[t] for (t, _) in sequence]
+    output_sequence = [tok2int[t] for (_, t) in sequence]
     s = s0
     loss = []
-    for char,next_char in zip(sentence,sentence[1:]):
-        s = s.add_input(lookup[char])
+    for input_token, output_token in zip(input_sequence, output_sequence):
+        s = s.add_input(lookup[input_token])
         probs = dy.softmax(R*s.output() + bias)
-        loss.append( -dy.log(dy.pick(probs,next_char)) )
+        loss.append( -dy.log(dy.pick(probs,output_token)) )
     loss = dy.esum(loss)
     return loss
 
@@ -73,24 +78,28 @@ def generate(rnn, params):
     bias = params["bias"]
     lookup = params["lookup"]
 
-    s = s0.add_input(lookup[char2int["<EOS>"]])
+    s = s0.add_input(lookup[tok2int["<EOS>"]])
     out=[]
     while True:
         probs = dy.softmax(R*s.output() + bias)
         probs = probs.vec_value()
-        next_char = sample(probs)
-        out.append(int2char[next_char])
+        next_token = sample(probs)
+        out.append(int2tok[next_token])
         if out[-1] == "<EOS>": break
-        s = s.add_input(lookup[next_char])
-    return "".join(out[:-1]) # strip the <EOS>
+        s = s.add_input(lookup[next_token])
+    return " ".join(out[:50]) # strip the <EOS>
 
-def train(rnn, params, sentence):
+def train(rnn, params, sequence):
     trainer = dy.SimpleSGDTrainer(pc)
     for i in range(200):
-        loss = do_one_sentence(rnn, params, sentence)
+        loss = do_one_sequence(rnn, params, sequence)
         loss_value = loss.value()
         loss.backward()
         trainer.update()
         if i % 5 == 0:
             print("%.10f" % loss_value, end="\t")
             print(generate(rnn, params))
+
+def run():
+    for sequence in training_pairs:
+        train(srnn, params_srnn, sequence)
