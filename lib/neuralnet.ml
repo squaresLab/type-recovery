@@ -2,10 +2,22 @@ open Pyutils
 
 let py_neuralnet = ref Py.none
 
-let init vocab () =
+(* Takes a list of I/O pairs and generates *)
+(* let training_pairs (pairs : (string list * string list) list) = *)
+
+(* Initializes the Python neural net code by adding the vocab *)
+let init vocab io_pairs () =
   let ocaml_module = Py.Import.add_module "ocaml" in
   let py_vocab = Py.List.of_list_map Py.String.of_string vocab in
   Py.Module.set ocaml_module "vocab" py_vocab;
+  let convert_io_pair (input, output) =
+    let py_input = Py.String.of_string input in
+    let py_output = Py.String.of_string output in
+    Py.Tuple.of_tuple2 (py_input, py_output)
+  in
+  let convert_pairs pairs = Py.List.of_list_map convert_io_pair pairs in
+  let py_pairs = Py.List.of_list_map convert_pairs io_pairs in
+  Py.Module.set ocaml_module "io_pairs" py_pairs;
   py_neuralnet := get_module "python.neuralnet"
 
 let py_train srnn params_srnn sentence =
@@ -15,8 +27,5 @@ let py_train srnn params_srnn sentence =
   train args
 
 let test_dynet () =
-  let sentence = "a quick brown fox jumped over the lazy dog" in
-  let get = Py.Module.get !py_neuralnet in
-  let srnn = get "srnn" in
-  let params = get "params_srnn" in
-  ignore (py_train srnn params sentence)
+  let py_run = get_python_fun !py_neuralnet "run" in
+  ignore (py_run [| |])

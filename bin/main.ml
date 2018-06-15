@@ -4,6 +4,7 @@ open Lib.Utils
 open Lib.Types
 
 module E = Errormsg
+module NN = Lib.Neuralnet
 module TS = Lib.Typesig
 
 let display_alt_types types =
@@ -64,16 +65,39 @@ let collect_types = function
 
 let main () =
   initCIL ();
-  let fname = Sys.argv.(1) in
-  let parsed = parse_one_file fname in
   add_base_types ();
-  iterGlobals parsed collect_types;
-  let print_fun_info f =
-    match f with
-    | GFun _ -> function_info f; E.log "\n"
-    | _ -> () in
-  iterGlobals parsed print_fun_info;
-  TS.print_types ()
+  let fnames =
+    match Array.to_list Sys.argv with
+    | [ _ ]  | [] -> failwith "Error: no input files"
+    | _ :: files -> files
+  in
+  let vocab_tbl = Hashtbl.create 3 in
+  let process_file tokenized_files fname =
+    Printf.printf "Processing %s\n%!" fname;
+    let tokens = Lib.Lex.tokenize fname in
+    List.iter (fun token -> Hashtbl.replace vocab_tbl token true) tokens;
+    let parsed = parse_one_file fname in
+    iterGlobals parsed collect_types;
+    tokens :: tokenized_files
+  in
+  let tokenized_files = List.fold_left process_file [] fnames in
+  Printf.printf "Vocab size: %d\n" (Hashtbl.stats vocab_tbl).num_bindings;
+  let vocab =
+    Hashtbl.fold (fun token _ tokens -> token :: tokens) vocab_tbl [] in
+  let vocab = "<???>" :: vocab in
+  let replace_tokens signature token_names tokenized_file =
+    let token_placeholder = "<???>" in
+    let replace_token token =
+      if List.mem token token_names then (token_placeholder, token)
+      else (token, token_placeholder)
+    in
+    List.map replace_token tokenized_file
+  in
+  let target_sig = [TS.Data 32] in
+  let sigs = Hashtbl.find TS.signatures target_sig in
+  let io_pairs = List.map (replace_tokens target_sig sigs) tokenized_files in
+  NN.init vocab io_pairs ();
+  NN.test_dynet()
 ;;
 
 main ();
