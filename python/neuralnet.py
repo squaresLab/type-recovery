@@ -3,8 +3,8 @@ import sys
 if not hasattr(sys, 'argv'):
     sys.argv = ['']
 
-import dynet_config
-dynet_config.set_gpu()
+# import dynet_config
+# dynet_config.set_gpu()
 import dynet as dy
 import random
 from collections import defaultdict
@@ -101,12 +101,14 @@ def generate(rnn, params, input_sequence):
 
 def train(rnn, params, sequence):
     trainer = dy.SimpleSGDTrainer(pc)
-    for i in range(200):
+    iterations = 50
+    for i in range(iterations):
         loss = do_one_sequence(rnn, params, sequence)
         loss_value = loss.value()
         loss.backward()
         trainer.update()
-        if i % 5 == 0:
+        if i % 10 == 0:
+            print("iteration %d of %d" % ((i+1), iterations))
             input_sequence = [i for (i, o) in sequence]
             output_sequence = [o for (i, o) in sequence]
             print("%.10f" % loss_value)
@@ -114,6 +116,8 @@ def train(rnn, params, sequence):
             print(generate(rnn, params, input_sequence))
 
 def run():
-    for sequence in training_pairs:
+    for i, sequence in enumerate(training_pairs):
+        print("Training sequence %d of %d. %.5f%% complete" %
+              (i+1, len(training_pairs), float(i)/len(training_pairs)))
         train(srnn, params_srnn, sequence)
     pc.save("nn.model")
