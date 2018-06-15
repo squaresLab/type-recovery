@@ -21,28 +21,25 @@ INPUT_DIM = SEQUENCE_LENGTH
 HIDDEN_DIM = 300
 
 input_vocab = list(input_vocab)
-input_vocab.append("<EOS>")
 int2input_token = list(input_vocab)
 input_token2int = {t:i for i,t in enumerate(input_vocab)}
 VOCAB_SIZE = len(input_vocab)
 
 output_vocab = list(output_vocab)
 output_vocab.append("<???>")
-output_vocab.append("<EOS>")
 int2output_token = list(output_vocab)
 output_token2int = {t:i for i,t in enumerate(output_vocab)}
 OUTPUT_VOCAB_SIZE = len(output_vocab)
 
 training_pairs = []
 for f in io_pairs:
-    eos = ("<EOS>", "<EOS>")
-    input_size = SEQUENCE_LENGTH - 2
+    input_size = SEQUENCE_LENGTH
     if len(f) <= input_size:
-        training_pairs += [eos] + f + [eos]
+        training_pairs += f
     else:
-        training_pairs += [[eos] + f[i:i+input_size] + [eos]
-                           for i in range(0, len(f)-input_size)]
+        training_pairs += [f[i:i+input_size] for i in range(0, len(f)-input_size)]
 print(len(training_pairs), " training pairs")
+print(len(output_vocab)-1, " possible types")
 
 pc = dy.ParameterCollection()
 
