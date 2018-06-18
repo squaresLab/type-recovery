@@ -4,22 +4,35 @@ import sys
 if not hasattr(sys, 'argv'):
     sys.argv = ['']
 
-# import dynet_config
-# dynet_config.set_gpu()
-import dynet as dy
+# Random seeding
 import random
+seed = random.randrange(4294967295)
+rng = random.Random(seed)
+
+import dynet_config
+# dynet_config.set_gpu()
+dynet_config.set(mem=2048, random_seed=seed)
+import dynet as dy
+
+import datetime
 from collections import defaultdict
 from itertools import count
 from ocaml import io_pairs, input_vocab, output_vocab
+from pathlib import Path
 
+# Colors for printing
 RED = "\x1b[1;31m"
 GREEN = "\x1b[1;32m"
 END_COLOR = "\x1b[0m"
 
+# Location to save the model and data
+MODEL_FILE = "nn.model"
+STATS_FILE = "stats.txt"
+
+# Typed versions of the OCaml imports
 typed_io_pairs: List[List[Tuple[str, str]]] = io_pairs
 typed_input_vocab: List[str] = list(input_vocab)
 typed_output_vocab: List[str] = list(output_vocab)
-
 
 int2input_token = list(typed_input_vocab)
 input_token2int = {t:i for i,t in enumerate(typed_input_vocab)}
@@ -35,7 +48,6 @@ LAYERS = 2
 INPUT_DIM = SEQUENCE_LENGTH
 HIDDEN_DIM = (SEQUENCE_LENGTH + OUTPUT_VOCAB_SIZE) / 2
 
-
 training_pairs: List[List[Tuple[str, str]]] = []
 for f in typed_io_pairs:
     input_size = SEQUENCE_LENGTH
@@ -43,22 +55,31 @@ for f in typed_io_pairs:
         training_pairs += [f]
     else:
         training_pairs += [f[i:i+input_size] for i in range(0, len(f)-input_size)]
-random.shuffle(training_pairs)
-print(len(training_pairs), " training pairs")
+rng.shuffle(training_pairs)
+TRAINING_PAIRS = len(training_pairs)
+print(TRAINING_PAIRS, " training pairs")
 print(len(typed_output_vocab)-1, " possible types")
 
+# Set up the neural net
 pc = dy.ParameterCollection()
-
 srnn = dy.SimpleRNNBuilder(LAYERS, INPUT_DIM, HIDDEN_DIM, pc)
-lstm = dy.LSTMBuilder(LAYERS, INPUT_DIM, HIDDEN_DIM, pc)
+params: Dict[str, dy.Expression] = {}
+params["lookup"] = pc.add_lookup_parameters((VOCAB_SIZE, INPUT_DIM))
+params["R"] = pc.add_parameters((OUTPUT_VOCAB_SIZE, HIDDEN_DIM))
+params["bias"] = pc.add_parameters((OUTPUT_VOCAB_SIZE))
 
-# add parameters for the hidden->output part for both lstm and srnn
-params_lstm: Dict[str, dy.Expression] = {}
-params_srnn: Dict[str, dy.Expression] = {}
-for params in [params_lstm, params_srnn]:
-    params["lookup"] = pc.add_lookup_parameters((VOCAB_SIZE, INPUT_DIM))
-    params["R"] = pc.add_parameters((OUTPUT_VOCAB_SIZE, HIDDEN_DIM))
-    params["bias"] = pc.add_parameters((OUTPUT_VOCAB_SIZE))
+# Load training data from disk if it exists
+model = Path(MODEL_FILE)
+if model.is_file():
+    print("Model file found, loading... ", end="")
+    try:
+        pc.populate(MODEL_FILE)
+        print("OK")
+    except Exception as e:
+        print("Failed")
+        print("Message was:\n\t%s" % (str(e), ))
+else:
+    print("No model file found")
 
 # return compute loss of RNN for one sequence
 def do_one_sequence(rnn, params, sequence):
@@ -130,10 +151,21 @@ def train(rnn, params, sequence):
             print()
 
 def run():
+    start_time = datetime.datetime.now()
+    progress = 0
     try:
-        for i, sequence in enumerate(training_pairs):
+        for sequence in training_pairs:
+            completed = (float(progress) / TRAINING_PAIRS) * 100
+            progress += 1
             print("Training sequence %d of %d. %.2f%% complete" %
-                  (i+1, len(training_pairs), (float(i)/len(training_pairs))*100))
-            train(srnn, params_srnn, sequence)
+                  (progress, TRAINING_PAIRS, completed))
+            train(srnn, params, sequence)
     finally:
-        pc.save("nn.model")
+        finish_time = datetime.datetime.now()
+        with open(STATS_FILE, "w") as stats:
+            stats.write("Started at %s\n" % (start_time.ctime(), ))
+            stats.write("Finished at %s\n" % (finish_time.ctime(), ))
+            stats.write("%d/%d completed (%.2f%%)\n" %
+                        (progress, TRAINING_PAIRS, completed))
+            stats.write("Seed: %d\n" % (seed, ))
+        pc.save(MODEL_FILE)
