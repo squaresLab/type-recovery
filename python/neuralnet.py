@@ -130,8 +130,10 @@ def train(rnn, params, sequence):
             print()
 
 def run():
-    for i, sequence in enumerate(training_pairs):
-        print("Training sequence %d of %d. %.2f%% complete" %
-              (i+1, len(training_pairs), (float(i)/len(training_pairs))*100))
-        train(srnn, params_srnn, sequence)
-    pc.save("nn.model")
+    try:
+        for i, sequence in enumerate(training_pairs):
+            print("Training sequence %d of %d. %.2f%% complete" %
+                  (i+1, len(training_pairs), (float(i)/len(training_pairs))*100))
+            train(srnn, params_srnn, sequence)
+    finally:
+        pc.save("nn.model")
