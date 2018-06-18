@@ -7,6 +7,8 @@ module E = Errormsg
 module NN = Lib.Neuralnet
 module TS = Lib.Typesig
 
+let vocab_tbl = Hashtbl.create 3
+
 let display_alt_types types =
   let type_list =
     let pretty_print cur type_list =
@@ -63,6 +65,13 @@ let collect_types = function
      TS.add_type type_sig einfo.ename
    | _ -> ()
 
+let process_file tokenized_files filename =
+  Printf.printf "Processing %s\n%!" filename;
+  let tokens = Lib.Lex.tokenize filename in
+  List.iter (fun token -> Hashtbl.replace vocab_tbl token true) tokens;
+  let parsed = parse_one_file filename in
+  iterGlobals parsed collect_types;
+  tokens :: tokenized_files
 
 (* FIXME *)
 let print_help () =
@@ -85,15 +94,6 @@ let main () =
     match Array.to_list Sys.argv with
     | [ _ ]  | [] -> failwith "Error: no input files"
     | _ :: files -> files
-  in
-  let vocab_tbl = Hashtbl.create 3 in
-  let process_file tokenized_files fname =
-    Printf.printf "Processing %s\n%!" fname;
-    let tokens = Lib.Lex.tokenize fname in
-    List.iter (fun token -> Hashtbl.replace vocab_tbl token true) tokens;
-    let parsed = parse_one_file fname in
-    iterGlobals parsed collect_types;
-    tokens :: tokenized_files
   in
   let tokenized_files = List.fold_left process_file [] fnames in
   Printf.printf "Vocab size: %d\n" (Hashtbl.stats vocab_tbl).num_bindings;
