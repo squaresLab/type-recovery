@@ -1,3 +1,4 @@
+from typing import Dict, List, Tuple
 import sys
 
 if not hasattr(sys, 'argv'):
@@ -15,42 +16,45 @@ RED = "\x1b[1;31m"
 GREEN = "\x1b[1;32m"
 END_COLOR = "\x1b[0m"
 
-input_vocab = list(input_vocab)
-int2input_token = list(input_vocab)
-input_token2int = {t:i for i,t in enumerate(input_vocab)}
-VOCAB_SIZE = len(input_vocab)
+typed_io_pairs: List[List[Tuple[str, str]]] = io_pairs
+typed_input_vocab: List[str] = list(input_vocab)
+typed_output_vocab: List[str] = list(output_vocab)
 
-output_vocab = list(output_vocab)
-output_vocab.append("<???>")
-int2output_token = list(output_vocab)
-output_token2int = {t:i for i,t in enumerate(output_vocab)}
-OUTPUT_VOCAB_SIZE = len(output_vocab)
+
+int2input_token = list(typed_input_vocab)
+input_token2int = {t:i for i,t in enumerate(typed_input_vocab)}
+VOCAB_SIZE = len(typed_input_vocab)
+
+typed_output_vocab.append("<???>")
+int2output_token = list(typed_output_vocab)
+output_token2int = {t:i for i,t in enumerate(typed_output_vocab)}
+OUTPUT_VOCAB_SIZE = len(typed_output_vocab)
 
 SEQUENCE_LENGTH = 300
 LAYERS = 2
 INPUT_DIM = SEQUENCE_LENGTH
 HIDDEN_DIM = (SEQUENCE_LENGTH + OUTPUT_VOCAB_SIZE) / 2
 
-training_pairs = []
-for f in io_pairs:
+
+training_pairs: List[List[Tuple[str, str]]] = []
+for f in typed_io_pairs:
     input_size = SEQUENCE_LENGTH
     if len(f) <= input_size:
-        training_pairs += f
+        training_pairs += [f]
     else:
         training_pairs += [f[i:i+input_size] for i in range(0, len(f)-input_size)]
 random.shuffle(training_pairs)
 print(len(training_pairs), " training pairs")
-print(len(output_vocab)-1, " possible types")
+print(len(typed_output_vocab)-1, " possible types")
 
 pc = dy.ParameterCollection()
-
 
 srnn = dy.SimpleRNNBuilder(LAYERS, INPUT_DIM, HIDDEN_DIM, pc)
 lstm = dy.LSTMBuilder(LAYERS, INPUT_DIM, HIDDEN_DIM, pc)
 
 # add parameters for the hidden->output part for both lstm and srnn
-params_lstm = {}
-params_srnn = {}
+params_lstm: Dict[str, dy.Expression] = {}
+params_srnn: Dict[str, dy.Expression] = {}
 for params in [params_lstm, params_srnn]:
     params["lookup"] = pc.add_lookup_parameters((VOCAB_SIZE, INPUT_DIM))
     params["R"] = pc.add_parameters((OUTPUT_VOCAB_SIZE, HIDDEN_DIM))

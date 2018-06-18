@@ -94,9 +94,9 @@ let main () =
     List.map replace_token tokenized_file
   in
   let target_sig = [TS.Data 32] in
-  let sigs = Hashtbl.find TS.signatures target_sig in
+  let types = Hashtbl.find TS.signatures target_sig in
   let io_pairs = List.map (replace_tokens target_sig sigs) tokenized_files in
-  NN.init vocab sigs io_pairs ();
+  NN.init vocab types io_pairs ();
   NN.test_dynet()
 ;;
 
