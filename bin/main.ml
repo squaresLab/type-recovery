@@ -63,6 +63,21 @@ let collect_types = function
      TS.add_type type_sig einfo.ename
    | _ -> ()
 
+
+(* FIXME *)
+let print_help () =
+  let program_name = Sys.argv.(0) in
+  Printf.printf "Usage: %s [files]\n" program_name;
+  exit 0
+
+(* FIXME *)
+let parse_args () =
+  let output_dir s = () in
+  let speclist = [("-o", Arg.String output_dir, "Output dir")] in
+  let usage_message = "Train a neural net" in
+  Arg.parse speclist print_endline usage_message;
+  exit 0
+
 let main () =
   initCIL ();
   add_base_types ();
