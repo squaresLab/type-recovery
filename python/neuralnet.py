@@ -23,6 +23,7 @@ from pathlib import Path
 # Colors for printing
 RED = "\x1b[1;31m"
 GREEN = "\x1b[1;32m"
+YELLOW= "\x1b[1;33m"
 END_COLOR = "\x1b[0m"
 
 # Location to save the model and data
@@ -46,7 +47,7 @@ OUTPUT_VOCAB_SIZE = len(typed_output_vocab)
 SEQUENCE_LENGTH = 300
 LAYERS = 2
 INPUT_DIM = SEQUENCE_LENGTH
-HIDDEN_DIM = (SEQUENCE_LENGTH + OUTPUT_VOCAB_SIZE) / 2
+HIDDEN_DIM = SEQUENCE_LENGTH / 2
 
 training_pairs: List[List[Tuple[str, str]]] = []
 for f in typed_io_pairs:
@@ -140,12 +141,18 @@ def train(rnn, params, sequence):
             output_sequence = [o for (i, o) in sequence]
             guessed_sequence = generate(rnn, params, input_sequence)
             report = []
+            print("%.10f" % loss_value)
+            for token in input_sequence:
+                if token == "<???>":
+                    print(YELLOW, token, END_COLOR, end=" ")
+                else:
+                    print(token, end=" ")
+            print()
             for actual, guessed in zip(output_sequence, guessed_sequence):
                 if actual == guessed:
                     report += [GREEN + guessed + END_COLOR]
                 else:
                     report += [RED + guessed + END_COLOR]
-            print("%.10f" % loss_value)
             for token in report:
                 print(token, end=" ")
             print()
