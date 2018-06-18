@@ -10,8 +10,8 @@ seed = random.randrange(4294967295)
 rng = random.Random(seed)
 
 import dynet_config
-# dynet_config.set_gpu()
 dynet_config.set(mem=2048, random_seed=seed)
+# dynet_config.set_gpu()
 import dynet as dy
 
 import datetime
