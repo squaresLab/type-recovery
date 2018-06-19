@@ -66,15 +66,18 @@ let collect_types = function
      TS.add_type type_sig einfo.ename
    | _ -> ()
 
-let process_file tokenized_files filename =
+let process_file filename =
   Printf.printf "Processing %s\n%!" filename;
-  let tokens = Lex.tokenize filename in
+  let parsed = parse_one_file filename in
+  iterGlobals parsed collect_types;
+  let target_sig = [TS.Data 32] in
+  let type_names = Hashtbl.find TS.signatures target_sig in
+  List.iter (Printf.printf "%s\n") type_names;
+  Lex.tokenize_replace_types type_names filename
   (* List.iter (fun token -> Hashtbl.replace vocab_tbl token true) tokens; *)
-  (* let parsed = parse_one_file filename in
-   * iterGlobals parsed collect_types; *)
   (* let file_hash = Digest.file filename in
    * Hashtbl.add processed_files file_hash true; *)
-  tokens :: tokenized_files
+  (* tokens :: tokenized_files *)
 
 let save_info () =
   Lex.save_vocab "vocab.txt"
@@ -97,15 +100,15 @@ let parse_args () =
   exit 0
 
 let main () =
-  load_info ()
-  (* initCIL ();
-   * add_base_types ();
-   * let fnames =
-   *   match Array.to_list Sys.argv with
-   *   | [ _ ]  | [] -> failwith "Error: no input files"
-   *   | _ :: files -> files
-   * in
-   * let tokenized_files = List.fold_left process_file [] fnames in *)
+  initCIL ();
+  add_base_types ();
+  let fnames =
+    match Array.to_list Sys.argv with
+    | [ _ ]  | [] -> failwith "Error: no input files"
+    | _ :: files -> files
+  in
+  (* let tokenized_files = List.fold_left process_file [] fnames in *)
+  List.iter process_file fnames;
   (* Printf.printf "Vocab size: %d\n" (Hashtbl.stats vocab_tbl).num_bindings;
    * let vocab =
    *   Hashtbl.fold (fun token _ tokens -> token :: tokens) vocab_tbl [] in
@@ -121,6 +124,7 @@ let main () =
    * let target_sig = [TS.Data 32] in
    * let types = Hashtbl.find TS.signatures target_sig in
    * let io_pairs = List.map (replace_tokens target_sig types) tokenized_files in *)
+  save_info ()
   (* NN.init vocab types io_pairs ();
    * NN.test_dynet() *)
 ;;

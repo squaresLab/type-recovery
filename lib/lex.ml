@@ -101,7 +101,7 @@ let string_of_token = function
   | ELSE -> "else"
   | ATTRIBUTE _ -> "attribute"
   | INLINE _ -> "inline"
-  | ASM _ -> "asm"
+  | ASM _ -> "__asm"
   | TYPEOF _ -> "typeof"
   | FUNCTION__ _ -> "__FUNCTION__"
   | PRETTY_FUNCTION__ _ -> "__PRETTY_FUNCTION__"
@@ -114,30 +114,56 @@ let string_of_token = function
   | BUILTIN_OFFSETOF _ -> "__builtin_types_compat"
   | DECLSPEC _ -> "DECLSPEC"
   | MSASM (s, _) | MSATTR (s, _) | PRAGMA_LINE (s, _) -> s
-  | PRAGMA _ -> "pragma"
+  | PRAGMA _ -> "__pragma"
   | PRAGMA_EOL -> ""
-  | AT_TRANSFORM _ -> ""
-  | AT_TRANSFORMEXPR _ -> ""
-  | AT_SPECIFIER _ -> ""
-  | AT_EXPR _ -> ""
-  | AT_NAME -> ""
+  | AT_TRANSFORM _ -> "@transform"
+  | AT_TRANSFORMEXPR _ -> "@transformExpr"
+  | AT_SPECIFIER _ -> "@specifier"
+  | AT_EXPR _ -> "@expr"
+  | AT_NAME -> "@name"
   | EOF -> ""
 
 let tokenize filename =
-  let infile = Clexer.init filename in
-  let collect_tokens infile =
-    let tokens = ref [] in
-    let finished = ref false in
-    while not !finished do
-      match Clexer.initial infile with
-      | EOF -> finished := true
-      | t -> begin
-          let token_name = string_of_token t in
-          Hashtbl.replace vocab token_name true;
-          tokens := token_name :: !tokens
-        end
-    done;
-    Clexer.finish ();
-    List.rev !tokens
+  let lexbuf = Clexer.init filename in
+  let defs = Cparser.interpret Clexer.initial lexbuf in
+  defs
+  (* let collect_tokens infile =
+   *   let rec helper tokens =
+   *     match Clexer.initial infile with
+   *     | EOF -> tokens
+   *     | t -> begin
+   *         let token_name = string_of_token t in
+   *         Hashtbl.replace vocab token_name true;
+   *         helper (token_name :: tokens)
+   *       end
+   *   in
+   *   let tokens = List.rev (helper []) in
+   *   Clexer.finish ();
+   *   tokens
+   * in
+   * collect_tokens infile *)
+
+class replace_types_visitor (type_names : string list) = object(self)
+  inherit Cabsvisit.nopCabsVisitor
+  method vspec spec =
+    let open Cabs in
+    let placeholder = Tnamed "<???>" in
+    let replace = function
+      | SpecType Tint -> SpecType placeholder
+      | SpecType (Tnamed name) when List.mem name type_names ->
+         SpecType placeholder
+      | x -> x
+    in
+    ChangeTo (List.map replace spec)
+end
+
+let tokenize_replace_types type_names filename =
+  let lexbuf = Clexer.init filename in
+  let defs = Cparser.interpret Clexer.initial lexbuf in
+  let redefine def =
+    let visitor = new replace_types_visitor type_names in
+    Cabsvisit.visitCabsDefinition visitor def
   in
-  collect_tokens infile
+  let modified_defs =
+    List.fold_left (fun defs def -> List.append defs (redefine def)) [] defs in
+  List.iter (fun d -> Cprint.print_def d; Printf.printf "\n") modified_defs
