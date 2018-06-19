@@ -1,4 +1,31 @@
 open Cil
+open Sexplib
+open Sexplib.Std
+
+let version_number = 1
+
+type string_list = string list [@@deriving sexp]
+type was_seen = (string, bool) Hashtbl.t
+
+let was_seen_header = Printf.sprintf "was_seen file v%d" version_number
+
+let save_was_seen was_seen_tbl fname =
+  let out_channel = open_out fname in
+  Printf.fprintf out_channel "%s\n" was_seen_header;
+  let items : string_list =
+    Hashtbl.fold (fun item _ items -> item :: items) was_seen_tbl [] in
+  let items_string = Sexp.to_string (sexp_of_string_list items) in
+  Printf.fprintf out_channel "%s\n" items_string;
+  close_out out_channel
+
+let load_was_seen was_seen_tbl fname =
+  let in_channel = open_in fname in
+  let header = input_line in_channel in
+  if header <> was_seen_header then
+    raise (Failure (Printf.sprintf "invalid file format %s" fname));
+  let items_string = input_line in_channel in
+  let items = string_list_of_sexp (Sexp.of_string items_string) in
+  List.iter (fun i -> Hashtbl.add was_seen_tbl i true) items
 
 let string_of_list f l =
   let append cur next = Printf.sprintf "%s, %s" cur (f next) in

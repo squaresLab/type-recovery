@@ -1,4 +1,9 @@
 open Cparser
+open Utils
+
+let vocab : was_seen = Hashtbl.create 3
+let save_vocab filename = save_was_seen vocab filename
+let load_vocab filename = load_was_seen vocab filename
 
 let string_of_token = function
   | IDENT (s, _) | QUALIFIER (s, _) -> s
@@ -126,10 +131,13 @@ let tokenize filename =
     while not !finished do
       match Clexer.initial infile with
       | EOF -> finished := true
-      | x -> tokens := x :: !tokens
+      | t -> begin
+          let token_name = string_of_token t in
+          Hashtbl.replace vocab token_name true;
+          tokens := token_name :: !tokens
+        end
     done;
     Clexer.finish ();
     List.rev !tokens
   in
-  let collected_tokens = collect_tokens infile in
-  List.map string_of_token collected_tokens
+  collect_tokens infile
