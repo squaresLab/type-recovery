@@ -145,25 +145,49 @@ let tokenize filename =
 
 class replace_types_visitor (type_names : string list) = object(self)
   inherit Cabsvisit.nopCabsVisitor
+  val mutable correct_vals = []
   method vspec spec =
     let open Cabs in
-    let placeholder = Tnamed "<???>" in
-    let replace = function
-      | SpecType Tint -> SpecType placeholder
-      | SpecType (Tnamed name) when List.mem name type_names ->
-         SpecType placeholder
-      | x -> x
-    in
-    ChangeTo (List.map replace spec)
+    let placeholder = SpecType (Tnamed "<???>") in
+    let long = SpecType Tlong in
+    let short = SpecType Tshort in
+    if List.mem long spec || List.mem short spec then
+      DoChildren
+    else begin
+        let find_type = function
+          | SpecType Tint -> true
+          | SpecType (Tnamed name) when List.mem name type_names -> true
+          | _ -> false
+        in
+        if List.exists find_type spec then begin
+            let collect (collected, rest) specifier =
+              match specifier with
+              | SpecType _ ->
+                 let collected = List.rev (specifier :: collected) in
+                 (collected, rest)
+              | _ ->
+                 let rest = List.rev (specifier :: rest) in
+                 (collected, rest)
+            in
+            let collected, rest = List.fold_left collect ([], []) spec in
+            correct_vals <- List.rev (collected :: correct_vals);
+            ChangeTo (List.rev (placeholder :: rest))
+          end
+        else
+          DoChildren
+      end
+  method get_correct_vals = correct_vals
 end
 
 let tokenize_replace_types type_names filename =
   let lexbuf = Clexer.init filename in
   let defs = Cparser.interpret Clexer.initial lexbuf in
+  let visitor = new replace_types_visitor type_names in
   let redefine def =
-    let visitor = new replace_types_visitor type_names in
-    Cabsvisit.visitCabsDefinition visitor def
+    Cabsvisit.visitCabsDefinition (visitor :> Cabsvisit.cabsVisitor) def
   in
   let modified_defs =
     List.fold_left (fun defs def -> List.append defs (redefine def)) [] defs in
+  let correct_vals = visitor#get_correct_vals in
+  List.iter (fun s -> Cprint.print_specifiers s; Printf.printf "\n") correct_vals;
   List.iter (fun d -> Cprint.print_def d; Printf.printf "\n") modified_defs
