@@ -123,25 +123,19 @@ let string_of_token = function
   | AT_NAME -> "@name"
   | EOF -> ""
 
-let tokenize filename =
-  let lexbuf = Clexer.init filename in
-  let defs = Cparser.interpret Clexer.initial lexbuf in
-  defs
-  (* let collect_tokens infile =
-   *   let rec helper tokens =
-   *     match Clexer.initial infile with
-   *     | EOF -> tokens
-   *     | t -> begin
-   *         let token_name = string_of_token t in
-   *         Hashtbl.replace vocab token_name true;
-   *         helper (token_name :: tokens)
-   *       end
-   *   in
-   *   let tokens = List.rev (helper []) in
-   *   Clexer.finish ();
-   *   tokens
-   * in
-   * collect_tokens infile *)
+class strip_constants_visitor = object(self)
+  inherit Cabsvisit.nopCabsVisitor
+  method vexpr = function
+    | CONSTANT (CONST_INT _) -> ChangeTo (CONSTANT (CONST_INT "<int>"))
+    | CONSTANT (CONST_FLOAT _) -> ChangeTo (CONSTANT (CONST_FLOAT "<float>"))
+    | CONSTANT (CONST_CHAR _) -> ChangeTo (CONSTANT (CONST_CHAR [Int64.zero]))
+    | CONSTANT (CONST_WCHAR _) -> ChangeTo (CONSTANT (CONST_WCHAR [Int64.zero]))
+    | CONSTANT (CONST_STRING _) ->
+       ChangeTo (CONSTANT (CONST_STRING "<string>"))
+    | CONSTANT (CONST_WSTRING _) ->
+       ChangeTo (CONSTANT (CONST_WSTRING [Int64.zero]))
+    | _ -> DoChildren
+end
 
 class replace_types_visitor (type_names : string list) = object(self)
   inherit Cabsvisit.nopCabsVisitor
@@ -178,6 +172,11 @@ class replace_types_visitor (type_names : string list) = object(self)
       end
   method get_correct_vals = correct_vals
 end
+
+let tokenize filename =
+  let lexbuf = Clexer.init filename in
+  let defs = Cparser.interpret Clexer.initial lexbuf in
+  defs
 
 let tokenize_replace_types type_names filename =
   let lexbuf = Clexer.init filename in
