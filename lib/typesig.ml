@@ -6,6 +6,8 @@ open Types
 
 module E = Errormsg
 
+let version_number = 1
+
 type memory = | Data of int
               | Padding of int [@@deriving sexp]
 
@@ -17,7 +19,9 @@ type filemap = (string, sigmap) Hashtbl.t [@@deriving sexp]
 let global_signatures : sigmap = Hashtbl.create 3
 let file_signatures : filemap = Hashtbl.create 3
 
-module Processed = Fileinfo.Make ()
+let seen_files = Fileinfo.empty
+
+let header = Printf.sprintf "typesig file v%d" version_number
 
 let add_to_signatures type_sig name signature_table =
   let cur_types = Hashtbl.find_opt signature_table type_sig in
@@ -99,7 +103,7 @@ let print_types signature_table =
 
 let collect_types cilfile =
   let fhash = Fileinfo.get_file_hash cilfile.fileName in
-  if Processed.saw_file fhash then
+  if Fileinfo.saw_file seen_files fhash then
     ()
   else
     begin
@@ -131,22 +135,20 @@ let collect_types cilfile =
         | _ -> ()
       in
       iterGlobals cilfile collect_one_type;
-      Processed.add_file fhash
+      Fileinfo.add_file seen_files fhash;
     end
 
-let to_file prefix =
-  let processed_fname = prefix ^ "-processed.txt" in
-  Processed.to_file processed_fname;
-
-  let global_sigs_fname = prefix ^ "-global-sigs.txt" in
-  Sexp.save global_sigs_fname (sexp_of_sigmap global_signatures);
-
-  let file_sigs_fname = prefix ^ "-file-sigs.txt" in
-  Sexp.save file_sigs_fname (sexp_of_filemap file_signatures)
+let to_file fname =
+  let processed = Sexp.to_string (Fileinfo.to_sexp seen_files) in
+  let global = Sexp.to_string (sexp_of_sigmap global_signatures) in
+  let file = Sexp.to_string (sexp_of_filemap file_signatures) in
+  let out_channel = open_out fname in
+  Printf.fprintf out_channel "%s\n%s\n%s\n%s\n" header processed global file;
+  close_out out_channel
 
 let from_file prefix =
   let processed_fname = prefix ^ "-processed.txt" in
-  Processed.from_file processed_fname;
+  Fileinfo.from_file seen_files processed_fname;
 
   let global_sigs_fname = prefix ^ "-global-sigs.txt" in
   let gs = sigmap_of_sexp (Sexp.load_sexp global_sigs_fname) in

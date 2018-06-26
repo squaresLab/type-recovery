@@ -8,7 +8,7 @@ type filemap = (string, sigmap) Hashtbl.t
 val global_signatures : sigmap
 val file_signatures : filemap
 
-val add_to_signatures : tsig -> string -> sigmap -> unit
+
 val string_of_sig : tsig -> string
 val offsets_of_type : Cil.typ -> tsig
 val collect_types : Cil.file -> unit

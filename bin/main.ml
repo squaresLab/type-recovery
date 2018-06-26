@@ -29,7 +29,7 @@ let display_alt_types types =
  *      display_alt_types alt_types;
  * 
  *      let collect_formals sigs formal = sigs @ TS.offsets_of_type formal.vtype in
- *      let formals_sig = List.fold_left collect_formals [] f.sformals in
+ *      let formals_sig = List.fold_left collectformals [] f.sformals in
  * 
  *      let collect_locals sigs local = sigs @ (TS.offsets_of_type local.vtype) in
  *      let locals_sig = List.fold_left collect_locals [] f.slocals in
@@ -53,10 +53,10 @@ let process_file filename =
   TS.collect_types parsed
 
 let save_info () =
-  TS.to_file "typesig"
+  TS.to_file "typesig.txt"
 
 let load_info () =
-  TS.from_file "typesig"
+  TS.from_file "typesig.txt"
 
 (* FIXME *)
 let print_help () =
