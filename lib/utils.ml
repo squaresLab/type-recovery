@@ -10,12 +10,20 @@ type was_seen = (string, bool) Hashtbl.t
 
 let was_seen_header = Printf.sprintf "was_seen file v%d" version_number
 
+let was_seen_to_sexp was_seen_tbl =
+  let items : string_list =
+    Hashtbl.fold (fun item _ items -> item :: items) was_seen_tbl [] in
+  sexp_of_string_list items
+
+let was_seen_of_sexp was_seen_tbl sexp =
+  let items = string_list_of_sexp sexp in
+  List.iter (fun i -> Hashtbl.add was_seen_tbl i true) items
+
 let was_seen_to_file was_seen_tbl fname =
   let out_channel = open_out fname in
   Printf.fprintf out_channel "%s\n" was_seen_header;
-  let items : string_list =
-    Hashtbl.fold (fun item _ items -> item :: items) was_seen_tbl [] in
-  let items_string = Sexp.to_string (sexp_of_string_list items) in
+  let items = was_seen_to_sexp was_seen_tbl in
+  let items_string = Sexp.to_string items in
   Printf.fprintf out_channel "%s\n" items_string;
   close_out out_channel
 
@@ -25,8 +33,8 @@ let was_seen_from_file was_seen_tbl fname =
   if header <> was_seen_header then
     raise (Failure (Printf.sprintf "invalid file format %s" fname));
   let items_string = input_line in_channel in
-  let items = string_list_of_sexp (Sexp.of_string items_string) in
-  List.iter (fun i -> Hashtbl.add was_seen_tbl i true) items
+  let items_sexp = Sexp.of_string items_string in
+  was_seen_of_sexp was_seen_tbl items_sexp
 
 let string_of_list f l =
   let append cur next = Printf.sprintf "%s, %s" cur (f next) in
