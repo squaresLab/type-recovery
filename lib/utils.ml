@@ -5,11 +5,12 @@ open Sexplib.Std
 let version_number = 1
 
 type string_list = string list [@@deriving sexp]
+
 type was_seen = (string, bool) Hashtbl.t
 
 let was_seen_header = Printf.sprintf "was_seen file v%d" version_number
 
-let save_was_seen was_seen_tbl fname =
+let was_seen_to_file was_seen_tbl fname =
   let out_channel = open_out fname in
   Printf.fprintf out_channel "%s\n" was_seen_header;
   let items : string_list =
@@ -18,7 +19,7 @@ let save_was_seen was_seen_tbl fname =
   Printf.fprintf out_channel "%s\n" items_string;
   close_out out_channel
 
-let load_was_seen was_seen_tbl fname =
+let was_seen_from_file was_seen_tbl fname =
   let in_channel = open_in fname in
   let header = input_line in_channel in
   if header <> was_seen_header then

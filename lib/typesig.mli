@@ -3,15 +3,18 @@ type memory = | Data of int
 
 type tsig = memory list
 type sigmap = (tsig, string list) Hashtbl.t
+type filemap = (string, sigmap) Hashtbl.t
 
-val signatures : sigmap
+val global_signatures : sigmap
+val file_signatures : filemap
 
+val add_to_signatures : tsig -> string -> sigmap -> unit
 val string_of_sig : tsig -> string
-val signature_id : tsig -> int
 val offsets_of_type : Cil.typ -> tsig
-val add_type : tsig -> string -> unit
-val get_type_names : tsig -> string list
-val get_alt_types : tsig -> string list list
-val print_types : unit -> unit
+val collect_types : Cil.file -> unit
+val add_base_types : unit -> unit
+val get_type_names : sigmap -> tsig -> string list
+val get_alt_types : sigmap -> tsig -> string list list
+val print_types : sigmap -> unit
 val to_file : string -> unit
 val from_file : string -> unit

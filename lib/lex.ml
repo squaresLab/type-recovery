@@ -2,8 +2,8 @@ open Cparser
 open Utils
 
 let vocab : was_seen = Hashtbl.create 3
-let save_vocab filename = save_was_seen vocab filename
-let load_vocab filename = load_was_seen vocab filename
+let save_vocab filename = was_seen_to_file vocab filename
+let load_vocab filename = was_seen_from_file vocab filename
 
 let string_of_token = function
   | IDENT (s, _) | QUALIFIER (s, _) -> s
@@ -188,5 +188,19 @@ let tokenize_replace_types type_names filename =
   let modified_defs =
     List.fold_left (fun defs def -> List.append defs (redefine def)) [] defs in
   let correct_vals = visitor#get_correct_vals in
-  List.iter (fun s -> Cprint.print_specifiers s; Printf.printf "\n") correct_vals;
-  List.iter (fun d -> Cprint.print_def d; Printf.printf "\n") modified_defs
+  let collect f collected item =
+    f item;
+    let item_string = Cprint.Sprint.get_string () in
+    List.rev (item_string :: collected)
+  in
+  let collect_specifiers = collect Cprint.Sprint.print_specifiers in
+  let collect_def = collect Cprint.Sprint.print_def in
+  let correct_strings = List.fold_left collect_specifiers [] correct_vals in
+  let defs_strings = List.fold_left collect_def [] modified_defs in
+  let split_def_string = Str.split (Str.regexp " ") in
+  let def_split = split_def_string (List.hd defs_strings) in
+  List.iter (Printf.printf "%s\n") def_split;
+  Printf.printf "\n";
+  Printf.printf "%s\n" (List.hd defs_strings)
+  (* List.iter (Printf.printf "%s\n") defs_strings;
+   * Printf.printf "\n" *)
