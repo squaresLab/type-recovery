@@ -10,7 +10,7 @@ let saw_file info fhash = Hashtbl.mem info fhash
 
 let to_sexp info = was_seen_to_sexp info
 
-let of_sexp info sexp = was_seen_of_sexp info sexp
+let from_sexp info sexp = was_seen_from_sexp info sexp
 
 let to_file info fname = was_seen_to_file info fname
 

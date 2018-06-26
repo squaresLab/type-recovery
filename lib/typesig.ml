@@ -146,15 +146,16 @@ let to_file fname =
   Printf.fprintf out_channel "%s\n%s\n%s\n%s\n" header processed global file;
   close_out out_channel
 
-let from_file prefix =
-  let processed_fname = prefix ^ "-processed.txt" in
-  Fileinfo.from_file seen_files processed_fname;
-
-  let global_sigs_fname = prefix ^ "-global-sigs.txt" in
-  let gs = sigmap_of_sexp (Sexp.load_sexp global_sigs_fname) in
+let from_file fname =
+  let in_channel = open_in fname in
+  let h = input_line in_channel in
+  if h <> header then
+    raise (Failure (Printf.sprintf "invalid file format %s" fname));
+  let processed_string = input_line in_channel in
+  let global_string = input_line in_channel in
+  let file_string = input_line in_channel in
+  Fileinfo.from_sexp seen_files (Sexp.of_string processed_string);
+  let gs = sigmap_of_sexp (Sexp.of_string global_string) in
   Hashtbl.iter (fun key v -> Hashtbl.replace global_signatures key v) gs;
-
-  let file_sigs_fname = prefix ^ "-file-sigs.txt" in
-  let fs = filemap_of_sexp (Sexp.load_sexp file_sigs_fname) in
+  let fs = filemap_of_sexp (Sexp.of_string file_string) in
   Hashtbl.iter (fun key v -> Hashtbl.replace file_signatures key v) fs
-

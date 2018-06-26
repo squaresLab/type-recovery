@@ -15,7 +15,7 @@ let was_seen_to_sexp was_seen_tbl =
     Hashtbl.fold (fun item _ items -> item :: items) was_seen_tbl [] in
   sexp_of_string_list items
 
-let was_seen_of_sexp was_seen_tbl sexp =
+let was_seen_from_sexp was_seen_tbl sexp =
   let items = string_list_of_sexp sexp in
   List.iter (fun i -> Hashtbl.add was_seen_tbl i true) items
 
@@ -34,7 +34,7 @@ let was_seen_from_file was_seen_tbl fname =
     raise (Failure (Printf.sprintf "invalid file format %s" fname));
   let items_string = input_line in_channel in
   let items_sexp = Sexp.of_string items_string in
-  was_seen_of_sexp was_seen_tbl items_sexp
+  was_seen_from_sexp was_seen_tbl items_sexp
 
 let string_of_list f l =
   let append cur next = Printf.sprintf "%s, %s" cur (f next) in
