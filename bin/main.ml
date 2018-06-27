@@ -55,11 +55,13 @@ let process_file filename =
     end
 
 let save_info () =
-  TS.to_file "typesig.txt"
+  TS.to_file "typesig.txt";
+  Lex.save_vocabs "vocab.txt"
 
 let load_info () =
   try
-    TS.from_file "typesig.txt"
+    TS.from_file "typesig.txt";
+    Lex.load_vocabs "vocab.txt"
   with _ ->
     ()
 
@@ -98,6 +100,7 @@ let rec menu () =
 
 let main () =
   initCIL ();
+  Lib.Pyutils.init ();
   TS.add_base_types TS.global_signatures;
   load_info ();
   let fnames =
@@ -106,10 +109,16 @@ let main () =
     | _ :: files -> files
   in
   List.iter (fun name -> process_file name; save_info ()) fnames;
+  let input_vocab =
+    Hashtbl.fold (fun k _ vocab -> k :: vocab) Lex.input_vocab []
+  in
+  let output_vocab =
+    Hashtbl.fold (fun k _ vocab -> k :: vocab) Lex.output_vocab ["<--->"]
+  in
   let train_one_file fname =
     let pairs_file = "io-pairs/" ^ (Filename.basename fname) in
     let io_pairs = [read_io_pairs pairs_file] in
-    NN.init io_pairs ();
+    NN.init input_vocab output_vocab io_pairs ();
     NN.run_dynet ()
   in
   List.iter train_one_file fnames

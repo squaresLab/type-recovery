@@ -1,4 +1,5 @@
-Py.initialize ~version:3 ~minor:6 ()
+let init () =
+  Py.initialize ~version:3 ~minor:6 ()
 
 let get_module module_name =
   match Py.Import.try_import_module module_name with
@@ -8,3 +9,7 @@ let get_module module_name =
 let get_python_fun python_module name =
   let python_function = Py.Module.get python_module name in
   Py.Callable.to_function python_function
+
+let reload_python () =
+  Py.finalize ();
+  init ()

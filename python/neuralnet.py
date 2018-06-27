@@ -4,6 +4,8 @@ import sys
 if not hasattr(sys, 'argv'):
     sys.argv = ['']
 
+
+import os.path
 # Random seeding
 import random
 seed = random.randrange(4294967295)
@@ -23,7 +25,8 @@ from pathlib import Path
 # Colors for printing
 RED = "\x1b[1;31m"
 GREEN = "\x1b[1;32m"
-YELLOW= "\x1b[1;33m"
+YELLOW = "\x1b[1;33m"
+BLUE = "\x1b[1;34m"
 END_COLOR = "\x1b[0m"
 
 # Location to save the model and data
@@ -61,7 +64,7 @@ TRAINING_PAIRS = len(training_pairs)
 print(TRAINING_PAIRS, " training pairs")
 print(len(typed_output_vocab)-1, " possible types")
 
-# Set up the neural net
+# set up the neural net
 pc = dy.ParameterCollection()
 srnn = dy.SimpleRNNBuilder(LAYERS, INPUT_DIM, HIDDEN_DIM, pc)
 params: Dict[str, dy.Expression] = {}
@@ -127,21 +130,24 @@ def generate(rnn, params, input_sequence):
         out.append(int2output_token[sample(probs)])
     return out
 
-def train(rnn, params, sequence):
+def train(rnn, params, sequence, progress, completed):
     trainer = dy.SimpleSGDTrainer(pc)
-    iterations = 50
+    iterations = 100
     for i in range(iterations):
         loss = do_one_sequence(rnn, params, sequence)
         loss_value = loss.value()
         loss.backward()
         trainer.update()
         if i % 10 == 0:
-            print("iteration %d of %d" % ((i+1), iterations))
+            print("\n")
+            print("Training sequence %d of %d. " % (progress, TRAINING_PAIRS), end="")
+            print("Iteration %d of %d " % ((i+1), iterations), end="")
+            print("%.2f%% complete" % (completed, ))
             input_sequence = [i for (i, o) in sequence]
             output_sequence = [o for (i, o) in sequence]
             guessed_sequence = generate(rnn, params, input_sequence)
             report = []
-            print("%.10f" % loss_value)
+            print("Loss: %.10f" % loss_value)
             for token in input_sequence:
                 if token == "<???>":
                     print(YELLOW, token, END_COLOR, end=" ")
@@ -150,7 +156,10 @@ def train(rnn, params, sequence):
             print()
             for actual, guessed in zip(output_sequence, guessed_sequence):
                 if actual == guessed:
-                    report += [GREEN + guessed + END_COLOR]
+                    if actual == "<--->":
+                        report += [BLUE + guessed + END_COLOR]
+                    else:
+                        report += [GREEN + guessed + END_COLOR]
                 else:
                     report += [RED + guessed + END_COLOR]
             for token in report:
@@ -164,9 +173,7 @@ def run():
         for sequence in training_pairs:
             completed = (float(progress) / TRAINING_PAIRS) * 100
             progress += 1
-            print("Training sequence %d of %d. %.2f%% complete" %
-                  (progress, TRAINING_PAIRS, completed))
-            train(srnn, params, sequence)
+            train(srnn, params, sequence, progress, completed)
     finally:
         finish_time = datetime.datetime.now()
         with open(STATS_FILE, "w") as stats:

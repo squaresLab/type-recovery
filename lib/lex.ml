@@ -1,9 +1,16 @@
 open Cparser
 open Utils
 
-let vocab : was_seen = Hashtbl.create 3
-let save_vocab filename = was_seen_to_file vocab filename
-let load_vocab filename = was_seen_from_file vocab filename
+let input_vocab : was_seen = Hashtbl.create 3
+let output_vocab : was_seen = Hashtbl.create 3
+
+let save_vocabs filename =
+  was_seen_to_file input_vocab ("input-" ^ filename);
+  was_seen_to_file output_vocab ("output-" ^ filename)
+
+let load_vocabs filename =
+  was_seen_from_file input_vocab ("input-" ^ filename);
+  was_seen_from_file output_vocab ("output-" ^ filename)
 
 let string_of_token = function
   | IDENT (s, _) | QUALIFIER (s, _) -> s
@@ -225,6 +232,8 @@ let tokenize_training_pairs type_names filename =
   let correct_strings =
     ref (List.fold_left collect_specifiers [] correct_vals)
   in
+  List.iter (fun c -> Hashtbl.replace output_vocab c true) !correct_strings;
+
   (* List of strings corresponding to each line of the code after constant
    * removal and hole insertion. This needs to be flattened into a list of
    * tokens. *)
@@ -234,7 +243,7 @@ let tokenize_training_pairs type_names filename =
     tokens @ split_def
   in
   let tokenized_file = List.fold_left add_definition [] defs_strings in
-
+  List.iter (fun tok -> Hashtbl.replace input_vocab tok true) tokenized_file;
   let create_pair next_token =
     match next_token with
     | "<???>" -> begin
