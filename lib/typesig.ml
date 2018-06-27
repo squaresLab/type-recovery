@@ -104,7 +104,8 @@ let print_types signature_table =
 let collect_types cilfile =
   let fhash = Fileinfo.get_file_hash cilfile.fileName in
   if Fileinfo.saw_file seen_files fhash then begin
-      Printf.printf "Already seen %s, skipping\n%!" cilfile.fileName;
+      Printf.printf
+        "Already seen %s, skipping type collection\n%!" cilfile.fileName;
       ()
     end
   else

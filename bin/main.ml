@@ -40,16 +40,19 @@ let save_io_pairs (pairs : (string * string) list) fname =
 
 let process_file filename =
   Printf.printf "Processing %s\n%!" filename;
-  let parsed = parse_one_file filename in
-  TS.collect_types parsed;
-  let fhash = Lib.Fileinfo.get_file_hash filename in
-  let typemap = Hashtbl.find TS.file_signatures fhash in
-  let signature = [TS.Data 32] in
-  let types = Hashtbl.find typemap signature in
-  let io_pairs = Lex.tokenize_training_pairs types filename in
   let pairs_file = "io-pairs/" ^ (Filename.basename filename) in
-  save_io_pairs io_pairs pairs_file
-
+  if Sys.file_exists pairs_file then
+    Printf.printf "Found pairs file, skipping\n"
+  else begin
+      let parsed = parse_one_file filename in
+      TS.collect_types parsed;
+      let fhash = Lib.Fileinfo.get_file_hash filename in
+      let typemap = Hashtbl.find TS.file_signatures fhash in
+      let signature = [TS.Data 32] in
+      let types = Hashtbl.find typemap signature in
+      let io_pairs = Lex.tokenize_training_pairs types filename in
+      save_io_pairs io_pairs pairs_file
+    end
 
 let save_info () =
   TS.to_file "typesig.txt"
