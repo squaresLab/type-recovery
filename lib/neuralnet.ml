@@ -32,6 +32,6 @@ let py_train srnn params_srnn sentence =
   let args = [| srnn; params_srnn; sentence |] in
   train args
 
-let test_dynet () =
+let run_dynet () =
   let py_run = get_python_fun !py_neuralnet "run" in
   ignore (py_run [| |])

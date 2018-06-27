@@ -105,14 +105,14 @@ let main () =
     | [ _ ]  | [] -> failwith "Error: no input files"
     | _ :: files -> files
   in
-  List.iter (fun name -> process_file name; save_info ()) fnames
-  (* let collect_pairs collected fname =
-   *   let new_pairs = process_file fname in
-   *   new_pairs :: collected
-   * in
-   * let io_pairs = List.fold_left collect_pairs [] fnames in *)
-  (* NN.init io_pairs ();
-   * NN.test_dynet() *)
+  List.iter (fun name -> process_file name; save_info ()) fnames;
+  let train_one_file fname =
+    let pairs_file = "io-pairs/" ^ (Filename.basename fname) in
+    let io_pairs = [read_io_pairs pairs_file] in
+    NN.init io_pairs ();
+    NN.run_dynet ()
+  in
+  List.iter train_one_file fnames
 ;;
 
 main ();
