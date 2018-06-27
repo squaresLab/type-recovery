@@ -2,6 +2,8 @@ open Cil
 open Pretty
 open Lib.Utils
 open Lib.Types
+open Sexplib
+open Sexplib.Std
 
 module E = Errormsg
 module Lex = Lib.Lex
@@ -17,6 +19,25 @@ let display_alt_types types =
     List.fold_left pretty_print "" types in
   E.log "Alternate types: %s\n" type_list
 
+let read_io_pairs fname =
+  let in_channel = open_in fname in
+  let sexp = Sexp.input_sexp in_channel in
+  let converted = list_of_sexp (list_of_sexp string_of_sexp) sexp in
+  let pair_of_list l =
+    match l with
+    | l1 :: l2 :: [] -> (l1, l2)
+    | _ -> failwith (Printf.sprintf "Error reading %s: invalid format" fname)
+  in
+  List.map pair_of_list converted
+
+let save_io_pairs (pairs : (string * string) list) fname =
+  let list_of_pair (p1, p2) = [p1; p2] in
+  let out_channel = open_out fname in
+  let converted = List.map list_of_pair pairs in
+  let sexp = sexp_of_list (sexp_of_list sexp_of_string) converted in
+  Sexp.output_mach out_channel sexp;
+  close_out out_channel
+
 let process_file filename =
   Printf.printf "Processing %s\n%!" filename;
   let parsed = parse_one_file filename in
@@ -25,7 +46,10 @@ let process_file filename =
   let typemap = Hashtbl.find TS.file_signatures fhash in
   let signature = [TS.Data 32] in
   let types = Hashtbl.find typemap signature in
-  Lex.tokenize_training_pairs types filename
+  let io_pairs = Lex.tokenize_training_pairs types filename in
+  let pairs_file = "io-pairs/" ^ (Filename.basename filename) in
+  save_io_pairs io_pairs pairs_file
+
 
 let save_info () =
   TS.to_file "typesig.txt"
@@ -78,14 +102,14 @@ let main () =
     | [ _ ]  | [] -> failwith "Error: no input files"
     | _ :: files -> files
   in
-  let collect_pairs collected fname =
-    let new_pairs = process_file fname in
-    new_pairs :: collected
-  in
-  let io_pairs = List.fold_left collect_pairs [] fnames in
-  save_info ();
-  NN.init io_pairs ();
-  NN.test_dynet()
+  List.iter (fun name -> process_file name; save_info ()) fnames
+  (* let collect_pairs collected fname =
+   *   let new_pairs = process_file fname in
+   *   new_pairs :: collected
+   * in
+   * let io_pairs = List.fold_left collect_pairs [] fnames in *)
+  (* NN.init io_pairs ();
+   * NN.test_dynet() *)
 ;;
 
 main ();
