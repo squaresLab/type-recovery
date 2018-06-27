@@ -17,7 +17,7 @@ let was_seen_to_sexp was_seen_tbl =
 
 let was_seen_from_sexp was_seen_tbl sexp =
   let items = string_list_of_sexp sexp in
-  List.iter (fun i -> Hashtbl.add was_seen_tbl i true) items
+  List.iter (fun i -> Hashtbl.replace was_seen_tbl i true) items
 
 let was_seen_to_file was_seen_tbl fname =
   let out_channel = open_out fname in
@@ -92,5 +92,14 @@ let rec list_partitions = function
      match p with
      | [[]] -> fst
      | _ -> fst @ (List.map rest p)
+
+let uniq list =
+  let seen = Hashtbl.create 3 in
+  let check elem =
+    match Hashtbl.find_opt seen elem with
+    | None -> Hashtbl.add seen elem true; true
+    | Some _ -> false
+  in
+  List.filter check list
 
 let parse_one_file (fname : string) : file = Frontc.parse fname ()
