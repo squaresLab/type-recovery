@@ -1,4 +1,5 @@
 open Pyutils
+open Utils
 
 let py_neuralnet = ref Py.none
 
@@ -6,7 +7,10 @@ let py_neuralnet = ref Py.none
 (* let training_pairs (pairs : (string list * string list) list) = *)
 
 (* Initializes the Python neural net code by adding the vocab *)
-let init input_vocab output_vocab io_pairs () =
+let init io_pairs () =
+  let input, output = List.split (List.flatten io_pairs) in
+  let input_vocab = uniq input in
+  let output_vocab = uniq output in
   let ocaml_module = Py.Import.add_module "ocaml" in
   let py_input_vocab = Py.List.of_list_map Py.String.of_string input_vocab in
   let py_output_vocab = Py.List.of_list_map Py.String.of_string output_vocab in

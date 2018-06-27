@@ -178,6 +178,7 @@ end
 let tokenize filename =
   let lexbuf = Clexer.init filename in
   let defs = Cparser.interpret Clexer.initial lexbuf in
+  Clexer.finish ();
   defs
 
 (* This tokenizes files for token-level NN models. It does the following:
@@ -191,6 +192,7 @@ let tokenize filename =
 let tokenize_training_pairs type_names filename =
   let lexbuf = Clexer.init filename in
   let defs = Cparser.interpret Clexer.initial lexbuf in
+  Clexer.finish ();
   let strip_constants defs def =
     let visitor = new strip_constants_visitor in
     let stripped_def =

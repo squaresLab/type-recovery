@@ -69,11 +69,11 @@ let offsets_of_type (t : typ) : tsig =
      List.rev info
   | _ -> [Data (bitsSizeOf t)]
 
-let add_base_types () =
+let add_base_types signatures =
   let add t =
     let signature = offsets_of_type t in
     let name = string_of_type t in
-    add_to_signatures signature name global_signatures
+    add_to_signatures signature name signatures
   in
   let base_pointer_types = add_pointers_to base_types in
   List.iter add (base_types @ base_pointer_types)
@@ -117,6 +117,7 @@ let collect_types cilfile =
            Hashtbl.replace file_signatures fhash signatures;
            signatures
       in
+      add_base_types file_signatures;
       let add_type type_sig name =
         add_to_signatures type_sig name global_signatures;
         add_to_signatures type_sig name file_signatures

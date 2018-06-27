@@ -17,46 +17,24 @@ let display_alt_types types =
     List.fold_left pretty_print "" types in
   E.log "Alternate types: %s\n" type_list
 
-(* let function_info = function
- *   | GFun (f, loc) ->
- *      let return_type =
- *        match f.svar.vtype with
- *        | TFun (t, _, _, _) -> t
- *        | _ -> voidType
- *      in
- *      let alt_types = TS.get_alt_types (TS.offsets_of_type return_type) in
- *      E.log "Function: %s has return type %a\n" f.svar.vname d_type return_type;
- *      display_alt_types alt_types;
- * 
- *      let collect_formals sigs formal = sigs @ TS.offsets_of_type formal.vtype in
- *      let formals_sig = List.fold_left collectformals [] f.sformals in
- * 
- *      let collect_locals sigs local = sigs @ (TS.offsets_of_type local.vtype) in
- *      let locals_sig = List.fold_left collect_locals [] f.slocals in
- * 
- *      let formal_alts = TS.get_alt_types formals_sig in
- *      let local_alts = TS.get_alt_types locals_sig in
- * 
- *      let pp_variable_type v = sprint 10 (dprintf "%a" d_type v.vtype) in
- *      E.log "Formal types: [%s]\n" (string_of_list pp_variable_type f.sformals);
- *      E.log "Formal sig: [%s]\n" (TS.string_of_sig formals_sig);
- *      display_alt_types formal_alts;
- *      E.log "Local types: [%s]\n" (string_of_list pp_variable_type f.slocals);
- *      E.log "Local sig: [%s]\n" (TS.string_of_sig locals_sig);
- *      display_alt_types local_alts
- *   | _ -> () *)
-
-
 let process_file filename =
-  (* Printf.printf "Processing %s\n%!" filename; *)
+  Printf.printf "Processing %s\n%!" filename;
   let parsed = parse_one_file filename in
-  TS.collect_types parsed
+  TS.collect_types parsed;
+  let fhash = Lib.Fileinfo.get_file_hash filename in
+  let typemap = Hashtbl.find TS.file_signatures fhash in
+  let signature = [TS.Data 32] in
+  let types = Hashtbl.find typemap signature in
+  Lex.tokenize_training_pairs types filename
 
 let save_info () =
   TS.to_file "typesig.txt"
 
 let load_info () =
-  TS.from_file "typesig.txt"
+  try
+    TS.from_file "typesig.txt"
+  with _ ->
+    ()
 
 (* FIXME *)
 let print_help () =
@@ -72,34 +50,42 @@ let parse_args () =
   Arg.parse speclist print_endline usage_message;
   exit 0
 
+let rec menu () =
+  let opts = ["exit"; "something else"] in
+  Printf.printf "menu\n";
+  List.iteri (fun i -> Printf.printf "%d: %s\n" (i+1)) opts;
+  let rec get_selection () =
+    let input = read_line () in
+    try
+      int_of_string input
+    with Failure _ -> begin
+          Printf.printf "%s is not a number, try again.\n" input;
+          get_selection ()
+      end
+  in
+  let selection = get_selection () in
+  match selection with
+  | 1 -> ()
+  | 2 -> Printf.printf "Cool!\n"; menu ()
+  | _ -> Printf.printf "invalid selection %d\n" selection; menu ()
+
 let main () =
   initCIL ();
-  TS.add_base_types ();
+  TS.add_base_types TS.global_signatures;
+  load_info ();
   let fnames =
     match Array.to_list Sys.argv with
     | [ _ ]  | [] -> failwith "Error: no input files"
     | _ :: files -> files
   in
-  (* let tokenized_files = List.fold_left process_file [] fnames in *)
-  List.iter process_file fnames;
-  (* Printf.printf "Vocab size: %d\n" (Hashtbl.stats vocab_tbl).num_bindings;
-   * let vocab =
-   *   Hashtbl.fold (fun token _ tokens -> token :: tokens) vocab_tbl [] in
-   * let vocab = "<???>" :: vocab in
-   * let replace_tokens signature token_names tokenized_file =
-   *   let token_placeholder = "<???>" in
-   *   let replace_token token =
-   *     if List.mem token token_names then (token_placeholder, token)
-   *     else (token, token_placeholder)
-   *   in
-   *   List.map replace_token tokenized_file
-   * in
-   * let target_sig = [TS.Data 32] in
-   * let types = Hashtbl.find TS.signatures target_sig in
-   * let io_pairs = List.map (replace_tokens target_sig types) tokenized_files in *)
-  save_info ()
-  (* NN.init vocab types io_pairs ();
-   * NN.test_dynet() *)
+  let collect_pairs collected fname =
+    let new_pairs = process_file fname in
+    new_pairs :: collected
+  in
+  let io_pairs = List.fold_left collect_pairs [] fnames in
+  save_info ();
+  NN.init io_pairs ();
+  NN.test_dynet()
 ;;
 
 main ();
