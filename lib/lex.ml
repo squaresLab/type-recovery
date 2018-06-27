@@ -137,6 +137,8 @@ class strip_constants_visitor = object(self)
     | _ -> DoChildren
 end
 
+(* FIXME: This currently only works with [32] types. Some thought will have to
+   go into extending this *)
 class replace_types_visitor (type_names : string list) = object(self)
   inherit Cabsvisit.nopCabsVisitor
   val mutable correct_vals = []
@@ -178,16 +180,37 @@ let tokenize filename =
   let defs = Cparser.interpret Clexer.initial lexbuf in
   defs
 
-let tokenize_replace_types type_names filename =
+(* This tokenizes files for token-level NN models. It does the following:
+ * - Strip constants
+ * - Replace [32] types with <???> tokens
+ * - Collect the corresponding type definitions for those holes
+ * - Generate a list of pairs. Each pair is an input and its corresponding
+ *   output tag. The input is either a token or a hole, the output is either
+ *   a string corresponding to a type definition or an empty token: <--->
+ *)
+let tokenize_training_pairs type_names filename =
   let lexbuf = Clexer.init filename in
   let defs = Cparser.interpret Clexer.initial lexbuf in
-  let visitor = new replace_types_visitor type_names in
-  let redefine def =
-    Cabsvisit.visitCabsDefinition (visitor :> Cabsvisit.cabsVisitor) def
+  let strip_constants defs def =
+    let visitor = new strip_constants_visitor in
+    let stripped_def =
+      Cabsvisit.visitCabsDefinition (visitor :> Cabsvisit.cabsVisitor) def
+    in
+    defs @ stripped_def
   in
-  let modified_defs =
-    List.fold_left (fun defs def -> List.append defs (redefine def)) [] defs in
-  let correct_vals = visitor#get_correct_vals in
+  let stripped_defs = List.fold_left strip_constants [] defs in
+
+  let replace_visitor = new replace_types_visitor type_names in
+  let replace_types defs def =
+    let redefined_def =
+      Cabsvisit.visitCabsDefinition
+        (replace_visitor :> Cabsvisit.cabsVisitor) def
+    in
+    defs @ redefined_def
+  in
+  let modified_defs = List.fold_left replace_types [] stripped_defs in
+
+  let correct_vals = replace_visitor#get_correct_vals in
   let collect f collected item =
     f item;
     let item_string = Cprint.Sprint.get_string () in
@@ -195,12 +218,30 @@ let tokenize_replace_types type_names filename =
   in
   let collect_specifiers = collect Cprint.Sprint.print_specifiers in
   let collect_def = collect Cprint.Sprint.print_def in
-  let correct_strings = List.fold_left collect_specifiers [] correct_vals in
+
+  (* List of strings corresponding to the correct type definitions, in order *)
+  let correct_strings =
+    ref (List.fold_left collect_specifiers [] correct_vals)
+  in
+  (* List of strings corresponding to each line of the code after constant
+   * removal and hole insertion. This needs to be flattened into a list of
+   * tokens. *)
   let defs_strings = List.fold_left collect_def [] modified_defs in
-  let split_def_string = Str.split (Str.regexp " ") in
-  let def_split = split_def_string (List.hd defs_strings) in
-  List.iter (Printf.printf "%s\n") def_split;
-  Printf.printf "\n";
-  Printf.printf "%s\n" (List.hd defs_strings)
-  (* List.iter (Printf.printf "%s\n") defs_strings;
-   * Printf.printf "\n" *)
+  let add_definition tokens def =
+    let split_def = Str.split (Str.regexp " ") def in
+    tokens @ split_def
+  in
+  let tokenized_file = List.fold_left add_definition [] defs_strings in
+
+  let create_pair next_token =
+    match next_token with
+    | "<???>" -> begin
+        match !correct_strings with
+        | next :: rest ->
+           correct_strings := rest;
+           (next_token, next)
+        | [] -> failwith "Error, not enough correct strings"
+      end
+    | _ -> (next_token, "<--->")
+  in
+  List.map create_pair tokenized_file
