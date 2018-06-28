@@ -12,7 +12,7 @@ module NN = Lib.Neuralnet
 module TS = Lib.Typesig
 
 let processed_files : was_seen = Hashtbl.create 3
-let trained_files = Fileinfo.empty
+let trained_files = Hashtbl.create 3
 
 let display_alt_types types =
   let type_list =
@@ -61,12 +61,18 @@ let save_info () =
   Lex.save_vocabs "vocab.txt"
 
 let load_info () =
-  try
-    TS.from_file "typesig.txt";
-    Lex.load_vocabs "vocab.txt";
-    Fileinfo.from_file trained_files "trained.txt"
-  with _ ->
-    ()
+  let load f file =
+    try
+      Printf.printf "Loading %s... " file;
+      f file;
+      Printf.printf "OK\n"
+    with _ ->
+      Printf.printf "Failed\n"
+  in
+  load TS.from_file "typesig.txt";
+  load Lex.load_vocabs "vocab.txt";
+  load (Fileinfo.from_file trained_files) "trained.txt"
+
 
 (* FIXME *)
 let print_help () =
@@ -111,6 +117,21 @@ let main () =
     | [ _ ]  | [] -> failwith "Error: no input files"
     | _ :: files -> files
   in
+  let time = Unix.time () in
+  let {Unix.tm_sec=seconds; tm_min=minutes; tm_hour=hours;
+       tm_mday=day_of_month; tm_mon=month; tm_year=year;
+       tm_wday=wday; tm_yday=yday; tm_isdst=isdst} =
+    Unix.localtime time
+  in
+  let now = Printf.sprintf "%02d:%02d:%02d - %02d/%02d/%04d"
+              hours minutes seconds (month + 1) day_of_month (year + 1900)
+  in
+  let out_channel = open_out "stats.txt" in
+  Printf.fprintf out_channel "New run started %s\n" now;
+  Printf.fprintf out_channel "%d input files:\n" (List.length fnames);
+  List.iter (Printf.fprintf out_channel "%s\n") fnames;
+  Printf.fprintf out_channel "----------\n";
+  close_out_noerr out_channel;
   List.iter (fun name -> process_file name; save_info ()) fnames;
   let input_vocab =
     Hashtbl.fold (fun k _ vocab -> k :: vocab) Lex.input_vocab []
@@ -122,15 +143,21 @@ let main () =
     let basename = Filename.basename fname in
     let pairs_file = "io-pairs/" ^ basename in
     let pairs_file_hash = Fileinfo.get_file_hash pairs_file in
+    let num_files = List.length fnames in
+    let file_info_string =
+      Printf.sprintf "File %d of %d: %s" (fnum + 1) num_files basename
+    in
     if Hashtbl.mem trained_files pairs_file_hash then
-      Printf.printf "Already trained on %s, skipping" basename
+      let info =
+        Printf.sprintf "%s\nAlready trained, skipping\n" file_info_string
+      in
+      let out_channel = open_out_gen [Open_append] 0o664 "stats.txt" in
+      Printf.fprintf out_channel "%s" info;
+      close_out_noerr out_channel;
+      Printf.printf "%s" info
     else begin
-        let num_files = List.length fnames in
-        let status =
-          Printf.sprintf "File %d of %d: %s" (fnum + 1) num_files basename
-        in
         let io_pairs = [read_io_pairs pairs_file] in
-        NN.init status input_vocab output_vocab io_pairs ();
+        NN.init file_info_string input_vocab output_vocab io_pairs ();
         NN.run_dynet ();
         Hashtbl.replace trained_files pairs_file_hash true;
         Fileinfo.to_file trained_files "trained.txt"

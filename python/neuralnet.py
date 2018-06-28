@@ -60,6 +60,7 @@ for f in typed_io_pairs:
     else:
         training_pairs += [f[i:i+input_size] for i in range(0, len(f)-input_size)]
 rng.shuffle(training_pairs)
+training_pairs = training_pairs[:500]
 TRAINING_PAIRS = len(training_pairs)
 print(TRAINING_PAIRS, " training pairs")
 print(len(typed_output_vocab)-1, " possible types")
@@ -75,7 +76,7 @@ params["bias"] = pc.add_parameters((OUTPUT_VOCAB_SIZE))
 # Load training data from disk if it exists
 model = Path(MODEL_FILE)
 if model.is_file():
-    print("Model file found, loading... ", end="")
+    print("Model file found, loading... ", end="", flush=True)
     try:
         pc.populate(MODEL_FILE)
         print("OK")
@@ -182,11 +183,14 @@ def run():
             progress += 1
             train(srnn, params, sequence, progress, completed)
     finally:
+        print("\nSaving model... ", end="", flush=True)
         finish_time = datetime.datetime.now()
-        with open(STATS_FILE, "w") as stats:
+        with open(STATS_FILE, "a") as stats:
+            stats.write(status + "\n")
             stats.write("Started at %s\n" % (start_time.ctime(), ))
             stats.write("Finished at %s\n" % (finish_time.ctime(), ))
             stats.write("%d/%d completed (%.2f%%)\n" %
                         (progress, TRAINING_PAIRS, completed))
             stats.write("Seed: %d\n" % (seed, ))
         pc.save(MODEL_FILE)
+        print("Done")
