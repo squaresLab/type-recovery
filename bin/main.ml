@@ -42,7 +42,7 @@ let process_file filename =
   Printf.printf "Processing %s\n%!" filename;
   let pairs_file = "io-pairs/" ^ (Filename.basename filename) in
   if Sys.file_exists pairs_file then
-    Printf.printf "Found pairs file, skipping\n"
+    Printf.printf "Found pairs file, skipping\n%!"
   else begin
       let parsed = parse_one_file filename in
       TS.collect_types parsed;

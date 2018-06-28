@@ -101,7 +101,13 @@ def do_one_sequence(rnn, params, sequence):
     for input_token, output_token in zip(input_sequence, output_sequence):
         s = s.add_input(lookup[input_token])
         probs = dy.softmax(R*s.output() + bias)
-        loss.append( -dy.log(dy.pick(probs,output_token)) )
+
+        # MinMax to avoid undefined 0/1 probabilities
+        # 1e-15 is arbitrary
+        min_val = dy.constant((OUTPUT_VOCAB_SIZE, ), 1e-15)
+        max_val = dy.constant((OUTPUT_VOCAB_SIZE, ), 1-1e-15)
+        probs = dy.bmax(dy.bmin(probs, max_val), min_val)
+        loss.append( -dy.log(dy.pick(probs,output_token)))
     loss = dy.esum(loss)
     return loss
 
