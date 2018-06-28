@@ -66,7 +66,7 @@ print(len(typed_output_vocab)-1, " possible types")
 
 # set up the neural net
 pc = dy.ParameterCollection()
-srnn = dy.SimpleRNNBuilder(LAYERS, INPUT_DIM, HIDDEN_DIM, pc)
+srnn = dy.GRUBuilder(LAYERS, INPUT_DIM, HIDDEN_DIM, pc)
 params: Dict[str, dy.Expression] = {}
 params["lookup"] = pc.add_lookup_parameters((VOCAB_SIZE, INPUT_DIM))
 params["R"] = pc.add_parameters((OUTPUT_VOCAB_SIZE, HIDDEN_DIM))
