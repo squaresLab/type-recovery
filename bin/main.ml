@@ -6,11 +6,13 @@ open Sexplib
 open Sexplib.Std
 
 module E = Errormsg
+module Fileinfo = Lib.Fileinfo
 module Lex = Lib.Lex
 module NN = Lib.Neuralnet
 module TS = Lib.Typesig
 
 let processed_files : was_seen = Hashtbl.create 3
+let trained_files = Fileinfo.empty
 
 let display_alt_types types =
   let type_list =
@@ -61,7 +63,8 @@ let save_info () =
 let load_info () =
   try
     TS.from_file "typesig.txt";
-    Lex.load_vocabs "vocab.txt"
+    Lex.load_vocabs "vocab.txt";
+    Fileinfo.from_file trained_files "trained.txt"
   with _ ->
     ()
 
@@ -115,13 +118,25 @@ let main () =
   let output_vocab =
     Hashtbl.fold (fun k _ vocab -> k :: vocab) Lex.output_vocab ["<--->"]
   in
-  let train_one_file fname =
-    let pairs_file = "io-pairs/" ^ (Filename.basename fname) in
-    let io_pairs = [read_io_pairs pairs_file] in
-    NN.init input_vocab output_vocab io_pairs ();
-    NN.run_dynet ()
+  let train_one_file fnum fname =
+    let basename = Filename.basename fname in
+    let pairs_file = "io-pairs/" ^ basename in
+    let pairs_file_hash = Fileinfo.get_file_hash pairs_file in
+    if Hashtbl.mem trained_files pairs_file_hash then
+      Printf.printf "Already trained on %s, skipping" basename
+    else begin
+        let num_files = List.length fnames in
+        let status =
+          Printf.sprintf "File %d of %d: %s" (fnum + 1) num_files basename
+        in
+        let io_pairs = [read_io_pairs pairs_file] in
+        NN.init status input_vocab output_vocab io_pairs ();
+        NN.run_dynet ();
+        Hashtbl.replace trained_files pairs_file_hash true;
+        Fileinfo.to_file trained_files "trained.txt"
+      end
   in
-  List.iter train_one_file fnames
+  List.iteri train_one_file fnames
 ;;
 
 main ();

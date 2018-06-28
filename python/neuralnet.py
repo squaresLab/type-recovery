@@ -19,7 +19,7 @@ import dynet as dy
 import datetime
 from collections import defaultdict
 from itertools import count
-from ocaml import io_pairs, input_vocab, output_vocab
+from ocaml import io_pairs, input_vocab, output_vocab, status
 from pathlib import Path
 
 # Colors for printing
@@ -146,6 +146,7 @@ def train(rnn, params, sequence, progress, completed):
         trainer.update()
         if i % 10 == 0:
             print("\n")
+            print(status)
             print("Training sequence %d of %d. " % (progress, TRAINING_PAIRS), end="")
             print("Iteration %d of %d " % ((i+1), iterations), end="")
             print("%.2f%% complete" % (completed, ))

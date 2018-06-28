@@ -7,7 +7,7 @@ let py_neuralnet = ref Py.none
 (* let training_pairs (pairs : (string list * string list) list) = *)
 
 (* Initializes the Python neural net code by adding the vocab *)
-let init input_vocab output_vocab io_pairs () =
+let init status input_vocab output_vocab io_pairs () =
   reload_python ();
   let _, x = List.split (List.flatten io_pairs) in
   let x = uniq x in
@@ -15,8 +15,10 @@ let init input_vocab output_vocab io_pairs () =
     Printf.printf "No outputs, skipping"
   else begin
       let ocaml_module = Py.Import.add_module "ocaml" in
+      let py_status = Py.String.of_string status in
       let py_input_vocab = Py.List.of_list_map Py.String.of_string input_vocab in
       let py_output_vocab = Py.List.of_list_map Py.String.of_string output_vocab in
+      Py.Module.set ocaml_module "status" py_status;
       Py.Module.set ocaml_module "input_vocab" py_input_vocab;
       Py.Module.set ocaml_module "output_vocab" py_output_vocab;
       let convert_io_pair (input, output) =
