@@ -1,6 +1,18 @@
 (executable
  (name main)
- (libraries lib
-            cil
-            stdcompat)
+ (modules main)
+ (libraries cil
+            lex
+            utils
+            typesig
+            fileinfo
+            stdcompat
+            sexplib)
+)
+
+(executable
+ (name collect)
+ (modules collect)
+ (libraries typesig
+            cil)
 )

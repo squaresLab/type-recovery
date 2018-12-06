@@ -1,15 +1,11 @@
 open Cil
 open Pretty
-open Lib.Utils
-open Lib.Types
+open Utils
 open Sexplib
 open Sexplib.Std
 
 module E = Errormsg
-module Fileinfo = Lib.Fileinfo
-module Lex = Lib.Lex
-module NN = Lib.Neuralnet
-module TS = Lib.Typesig
+module TS = Typesig
 
 let processed_files : was_seen = Hashtbl.create 3
 let trained_files = Hashtbl.create 3
@@ -48,7 +44,7 @@ let process_file filename =
   else begin
       let parsed = parse_one_file filename in
       TS.collect_types parsed;
-      let fhash = Lib.Fileinfo.get_file_hash filename in
+      let fhash = Fileinfo.get_file_hash filename in
       let typemap = Hashtbl.find TS.file_signatures fhash in
       let signature = [TS.Data 32] in
       let types = Hashtbl.find typemap signature in
@@ -109,7 +105,6 @@ let rec menu () =
 
 let main () =
   initCIL ();
-  Lib.Pyutils.init ();
   TS.add_base_types TS.global_signatures;
   load_info ();
   let fnames =

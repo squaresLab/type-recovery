@@ -1,7 +1,8 @@
 (library
- (name lib)
+ (name typesig)
  (libraries cil
+            fileinfo
             sexplib
-            stdcompat)
+            utils)
  (preprocess (pps ppx_sexp_conv))
 )
