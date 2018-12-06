@@ -1,0 +1,6 @@
+(executable
+ (name main)
+ (libraries lib
+            cil
+            stdcompat)
+)
