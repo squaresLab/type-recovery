@@ -1,6 +1,5 @@
 (* Additional base types not defined by CIL *)
 open Cil
-open Utils
 
 (* Naming convention to match CIL *)
 let scharType      = TInt(ISChar, [])
@@ -44,12 +43,12 @@ let rec string_of_type = function
        | TPtr _ -> "*"  ^ (string_of_type t)
        | _      -> "* " ^ (string_of_type t)
      end
-  | TArray (t, exp, _) -> (string_of_type t) ^ "[]"
+  | TArray (t, _, _) -> (string_of_type t) ^ "[]"
   | _ -> ""
 
 let string_of_exp exp =
   let exp_doc = Pretty.dprintf "%a" d_exp exp in
-  Pretty.sprint 80000 exp_doc
+  Pretty.sprint ~width:80000 exp_doc
 
 let rec string_of_offset = function
   | NoOffset -> ""
@@ -61,12 +60,12 @@ let rec string_of_offset = function
      let next_offset = string_of_offset offset in
      Printf.sprintf "[%s]%s" exp_string next_offset
 
-let rec string_of_lval = function
+let string_of_lval = function
   | (Var (v), offset) ->
      let type_string = string_of_type v.vtype in
      let offset_string = string_of_offset offset in
      Printf.sprintf "<%s> %s%s" type_string v.vname offset_string
-  | (Mem (exp), offset) ->
+  | (Mem (exp), _) ->
      "*" ^ string_of_exp exp
 
 let int_types = [charType;

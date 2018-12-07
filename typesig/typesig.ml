@@ -41,7 +41,7 @@ let string_of_sig (t : tsig) =
 
 let offsets_of_type (t : typ) : tsig =
   match t with
-  | TArray (base_type, exp, attrs) ->
+  | TArray (base_type, exp, _) ->
      let base_type_size = bitsSizeOf base_type in
      begin
        match exp with
@@ -64,7 +64,7 @@ let offsets_of_type (t : typ) : tsig =
        match cur_padding, field.ftype with
        | 0, _ -> ((Data tsize) :: offsets, next_padding)
        | p, TInt (IChar, _) -> ((Data 8) :: offsets, p - 8)
-       | p, t -> ((Data tsize) :: (Padding p) :: offsets, next_padding) in
+       | p, _ -> ((Data tsize) :: (Padding p) :: offsets, next_padding) in
      let (info, _) = List.fold_left add_padded_memory ([], 0) cinfo.cfields in
      List.rev info
   | _ -> [Data (bitsSizeOf t)]
