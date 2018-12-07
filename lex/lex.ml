@@ -132,7 +132,7 @@ let string_of_token = function
 
 class strip_constants_visitor = object(self)
   inherit Cabsvisit.nopCabsVisitor
-  method vexpr = function
+  method! vexpr = function
     | CONSTANT (CONST_INT _) -> ChangeTo (CONSTANT (CONST_INT "<int>"))
     | CONSTANT (CONST_FLOAT _) -> ChangeTo (CONSTANT (CONST_FLOAT "<float>"))
     | CONSTANT (CONST_CHAR _) -> ChangeTo (CONSTANT (CONST_CHAR [Int64.zero]))
@@ -149,7 +149,7 @@ end
 class replace_types_visitor (type_names : string list) = object(self)
   inherit Cabsvisit.nopCabsVisitor
   val mutable correct_vals = []
-  method vspec spec =
+  method! vspec spec =
     let open Cabs in
     let placeholder = SpecType (Tnamed "<???>") in
     let long = SpecType Tlong in
